@@ -1,0 +1,89 @@
+//! Global hotkeys: the show/hide window shortcut and hotkey-triggered
+//! automations. Registered only when the setting, the «Горячие клавиши»
+//! module and the matching permission are all on.
+
+use std::str::FromStr;
+
+use tauri::{AppHandle, Manager};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, ShortcutState};
+
+use crate::automation::{engine, store, types::Trigger};
+use crate::error::{AppError, AppResult};
+use crate::modules::registry::{self, MODULE_AUTOMATIONS};
+use crate::permissions::{self, PERM_GLOBAL_HOTKEYS};
+use crate::state::AppState;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum HotkeyTarget {
+    ToggleWindow,
+    Automation(String),
+}
+
+/// Called by the global-shortcut plugin for every registered shortcut.
+pub fn handle(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
+    if event.state() != ShortcutState::Pressed {
+        return;
+    }
+    let target = app.state::<AppState>().hotkeys.lock().unwrap().get(&shortcut.id()).cloned();
+    match target {
+        Some(HotkeyTarget::ToggleWindow) => crate::window::toggle(app),
+        Some(HotkeyTarget::Automation(id)) => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = engine::run_by_id(&app, &id).await {
+                    tracing::warn!("hotkey automation {id}: {e}");
+                }
+            });
+        }
+        None => {}
+    }
+}
+
+/// Re-registers all shortcuts from current settings and automations.
+/// Fails only if the window shortcut can't be registered; automation
+/// shortcuts that are taken are logged and skipped.
+pub async fn sync(app: &AppHandle) -> AppResult<()> {
+    let state = app.state::<AppState>();
+    let gs = app.global_shortcut();
+    gs.unregister_all().map_err(anyhow::Error::from)?;
+    state.hotkeys.lock().unwrap().clear();
+
+    let settings = state.settings();
+    let allowed = settings.global_hotkeys_enabled
+        && registry::is_enabled(&state.db, "hotkeys").await?
+        && permissions::is_granted(&state.db, PERM_GLOBAL_HOTKEYS).await?;
+    if !allowed {
+        tracing::info!("global hotkeys are off");
+        return Ok(());
+    }
+
+    let register = |text: &str, target: HotkeyTarget| -> AppResult<()> {
+        let shortcut = Shortcut::from_str(text.trim())
+            .map_err(|e| AppError::Invalid(format!("сочетание «{text}» не распознано: {e}")))?;
+        let mut map = state.hotkeys.lock().unwrap();
+        if map.contains_key(&shortcut.id()) {
+            return Err(AppError::Invalid(format!("сочетание «{text}» уже используется в FocusDeck")));
+        }
+        gs.register(shortcut)
+            .map_err(|_| AppError::Invalid(format!("сочетание «{text}» занято другой программой")))?;
+        map.insert(shortcut.id(), target);
+        Ok(())
+    };
+
+    if !settings.toggle_window_hotkey.trim().is_empty() {
+        register(&settings.toggle_window_hotkey, HotkeyTarget::ToggleWindow)?;
+    }
+
+    if registry::is_enabled(&state.db, MODULE_AUTOMATIONS).await? {
+        for a in store::list(&state.db).await?.into_iter().filter(|a| a.enabled) {
+            if let Trigger::Hotkey { shortcut } = &a.trigger {
+                if let Err(e) = register(shortcut, HotkeyTarget::Automation(a.id.clone())) {
+                    tracing::warn!(automation = %a.id, "{e}");
+                    let _ = store::log(&state.db, &a.id, "error", &e.to_string()).await;
+                }
+            }
+        }
+    }
+    tracing::info!(count = state.hotkeys.lock().unwrap().len(), "global hotkeys registered");
+    Ok(())
+}
