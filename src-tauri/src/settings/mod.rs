@@ -52,19 +52,24 @@ impl Default for AppSettings {
 impl AppSettings {
     pub fn validate(&self) -> AppResult<()> {
         if self.language != "ru" {
-            return Err(AppError::Invalid("поддерживается только русский язык".into()));
+            return Err(AppError::Invalid(
+                "поддерживается только русский язык".into(),
+            ));
         }
         let hotkey = self.toggle_window_hotkey.trim();
         if !hotkey.is_empty() {
-            Shortcut::from_str(hotkey)
-                .map_err(|e| AppError::Invalid(format!("сочетание «{hotkey}» не распознано: {e}")))?;
+            Shortcut::from_str(hotkey).map_err(|e| {
+                AppError::Invalid(format!("сочетание «{hotkey}» не распознано: {e}"))
+            })?;
         }
         Ok(())
     }
 }
 
 pub async fn load(pool: &SqlitePool) -> AppResult<AppSettings> {
-    let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value_json FROM settings").fetch_all(pool).await?;
+    let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value_json FROM settings")
+        .fetch_all(pool)
+        .await?;
     let mut map = Map::new();
     for (key, json) in rows {
         // A corrupt value falls back to its default instead of breaking startup.
@@ -76,7 +81,9 @@ pub async fn load(pool: &SqlitePool) -> AppResult<AppSettings> {
 }
 
 pub async fn save(pool: &SqlitePool, settings: &AppSettings) -> AppResult<()> {
-    let Value::Object(map) = serde_json::to_value(settings)? else { unreachable!() };
+    let Value::Object(map) = serde_json::to_value(settings)? else {
+        unreachable!()
+    };
     let mut tx = pool.begin().await?;
     for (key, value) in map {
         sqlx::query(
@@ -92,6 +99,13 @@ pub async fn save(pool: &SqlitePool, settings: &AppSettings) -> AppResult<()> {
     Ok(())
 }
 
+/// Emitted when settings change outside the Settings page (e.g. import).
+pub const CHANGED_EVENT: &str = "focusdeck://settings-changed";
+
+pub fn notify_changed(app: &AppHandle) {
+    let _ = tauri::Emitter::emit(app, CHANGED_EVENT, ());
+}
+
 #[tauri::command]
 pub fn settings_get(state: State<'_, AppState>) -> AppSettings {
     state.settings()
@@ -99,9 +113,18 @@ pub fn settings_get(state: State<'_, AppState>) -> AppSettings {
 
 /// Validates and saves settings, then applies side effects (autostart, hotkeys).
 #[tauri::command]
-pub async fn settings_update(app: AppHandle, state: State<'_, AppState>, settings: AppSettings) -> AppResult<AppSettings> {
+pub async fn settings_update(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    settings: AppSettings,
+) -> AppResult<AppSettings> {
+    if !state.module_enabled(crate::modules::catalog::SETTINGS) {
+        return Err(AppError::ModuleDisabled("Настройки".into()));
+    }
     settings.validate()?;
     let old = state.settings();
+    // The OS autostart entry is only managed while the Autostart module is on.
+    let manage_autostart = state.module_enabled(crate::modules::catalog::AUTOSTART);
 
     // Turning a feature on in Settings is the user's consent for its permission.
     if settings.autostart && !old.autostart {
@@ -111,7 +134,7 @@ pub async fn settings_update(app: AppHandle, state: State<'_, AppState>, setting
         permissions::ensure_granted(&state.db, PERM_GLOBAL_HOTKEYS, "settings").await?;
     }
 
-    if settings.autostart != old.autostart {
+    if manage_autostart && settings.autostart != old.autostart {
         crate::autostart::set(&app, settings.autostart)?;
     }
 
@@ -119,7 +142,7 @@ pub async fn settings_update(app: AppHandle, state: State<'_, AppState>, setting
     // A hotkey taken by another program must not be saved: roll back.
     if let Err(e) = crate::hotkeys::sync(&app).await {
         tracing::warn!("hotkey registration failed, reverting settings: {e}");
-        if settings.autostart != old.autostart {
+        if manage_autostart && settings.autostart != old.autostart {
             let _ = crate::autostart::set(&app, old.autostart);
         }
         *state.settings.write().unwrap() = old;
@@ -150,10 +173,12 @@ mod tests {
     #[tokio::test]
     async fn unknown_and_corrupt_values_fall_back() {
         let pool = crate::db::test_pool().await;
-        sqlx::query("INSERT INTO settings (key, value_json) VALUES ('theme', 'not json'), ('legacy', '1')")
-            .execute(&pool)
-            .await
-            .unwrap();
+        sqlx::query(
+            "INSERT INTO settings (key, value_json) VALUES ('theme', 'not json'), ('legacy', '1')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
         assert_eq!(load(&pool).await.unwrap().theme, Theme::Dark);
     }
 

@@ -53,13 +53,17 @@ async fn count(db: &sqlx::SqlitePool, sql: &'static str) -> AppResult<i64> {
 }
 
 #[tauri::command]
-pub async fn dashboard_stats(app: AppHandle, state: State<'_, AppState>) -> AppResult<DashboardStats> {
+pub async fn dashboard_stats(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> AppResult<DashboardStats> {
     // Read the lock before any await: a held MutexGuard would make the future non-Send.
     let hotkeys_registered = state.hotkeys.lock().unwrap().len();
     let db = &state.db;
-    let active_layout: Option<(String,)> = sqlx::query_as("SELECT name FROM widget_layouts WHERE is_active = 1 LIMIT 1")
-        .fetch_optional(db)
-        .await?;
+    let active_layout: Option<(String,)> =
+        sqlx::query_as("SELECT name FROM widget_layouts WHERE is_active = 1 LIMIT 1")
+            .fetch_optional(db)
+            .await?;
     Ok(DashboardStats {
         modules_enabled: count(db, "SELECT COUNT(*) FROM modules WHERE enabled = 1").await?,
         modules_total: count(db, "SELECT COUNT(*) FROM modules").await?,

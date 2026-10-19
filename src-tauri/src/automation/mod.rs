@@ -25,7 +25,11 @@ pub async fn automations_list(state: State<'_, AppState>) -> AppResult<Vec<Autom
 }
 
 #[tauri::command]
-pub async fn automations_create(app: AppHandle, state: State<'_, AppState>, input: AutomationInput) -> AppResult<Automation> {
+pub async fn automations_create(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    input: AutomationInput,
+) -> AppResult<Automation> {
     let a = store::create(&state.db, &input).await?;
     resync_if_hotkey(&app, &a.trigger).await?;
     Ok(a)
@@ -46,14 +50,23 @@ pub async fn automations_update(
 }
 
 #[tauri::command]
-pub async fn automations_set_enabled(app: AppHandle, state: State<'_, AppState>, id: String, enabled: bool) -> AppResult<Automation> {
+pub async fn automations_set_enabled(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+    enabled: bool,
+) -> AppResult<Automation> {
     let a = store::set_enabled(&state.db, &id, enabled).await?;
     resync_if_hotkey(&app, &a.trigger).await?;
     Ok(a)
 }
 
 #[tauri::command]
-pub async fn automations_delete(app: AppHandle, state: State<'_, AppState>, id: String) -> AppResult<()> {
+pub async fn automations_delete(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+) -> AppResult<()> {
     let a = store::get(&state.db, &id).await?;
     store::delete(&state.db, &id).await?;
     resync_if_hotkey(&app, &a.trigger).await
@@ -65,6 +78,10 @@ pub async fn automations_run_now(app: AppHandle, id: String) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub async fn automations_logs(state: State<'_, AppState>, id: Option<String>, limit: Option<i64>) -> AppResult<Vec<AutomationLog>> {
+pub async fn automations_logs(
+    state: State<'_, AppState>,
+    id: Option<String>,
+    limit: Option<i64>,
+) -> AppResult<Vec<AutomationLog>> {
     store::logs(&state.db, id.as_deref(), limit.unwrap_or(50)).await
 }

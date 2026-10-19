@@ -12,6 +12,12 @@ pub enum AppError {
     Invalid(String),
     #[error("Нет разрешения: {0}")]
     PermissionDenied(String),
+    /// The action needs the user's explicit confirmation (retry with `confirm: true`).
+    #[error("{0}")]
+    ConfirmationRequired(String),
+    /// The feature's module is turned off.
+    #[error("Модуль «{0}» отключён. Включите его в Центре управления.")]
+    ModuleDisabled(String),
     #[error("Ошибка базы данных: {0}")]
     Db(#[from] sqlx::Error),
     #[error("Ошибка формата данных: {0}")]
@@ -26,6 +32,8 @@ impl AppError {
             Self::NotFound(_) => "not_found",
             Self::Invalid(_) => "invalid",
             Self::PermissionDenied(_) => "permission_denied",
+            Self::ConfirmationRequired(_) => "confirmation_required",
+            Self::ModuleDisabled(_) => "module_disabled",
             Self::Db(_) => "database",
             Self::Json(_) => "json",
             Self::Other(_) => "internal",

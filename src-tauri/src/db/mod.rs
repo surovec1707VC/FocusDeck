@@ -2,8 +2,8 @@
 
 use std::path::Path;
 
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 
 pub const DB_FILE: &str = "focusdeck.sqlite";
 
@@ -16,7 +16,10 @@ pub async fn connect(dir: &Path) -> anyhow::Result<SqlitePool> {
         .create_if_missing(true)
         .foreign_keys(true)
         .journal_mode(SqliteJournalMode::Wal);
-    let pool = SqlitePoolOptions::new().max_connections(5).connect_with(options).await?;
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect_with(options)
+        .await?;
     migrate(&pool).await?;
     Ok(pool)
 }
@@ -29,9 +32,15 @@ pub async fn migrate(pool: &SqlitePool) -> anyhow::Result<()> {
 /// In-memory database with migrations applied, for tests.
 #[cfg(test)]
 pub async fn test_pool() -> SqlitePool {
-    let options = SqliteConnectOptions::new().in_memory(true).foreign_keys(true);
+    let options = SqliteConnectOptions::new()
+        .in_memory(true)
+        .foreign_keys(true);
     // One connection: every in-memory connection is a separate database.
-    let pool = SqlitePoolOptions::new().max_connections(1).connect_with(options).await.unwrap();
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await
+        .unwrap();
     migrate(&pool).await.unwrap();
     pool
 }
@@ -57,9 +66,22 @@ mod tests {
         assert_eq!(
             names,
             [
-                "automation_logs", "automations", "clipboard_history", "connector_settings", "connectors",
-                "module_settings", "modules", "notes", "permission_logs", "permissions", "settings",
-                "snippets", "tasks", "widget_layouts", "widgets",
+                "automation_logs",
+                "automations",
+                "clipboard_history",
+                "connector_settings",
+                "connectors",
+                "module_logs",
+                "module_settings",
+                "modules",
+                "notes",
+                "permission_logs",
+                "permissions",
+                "settings",
+                "snippets",
+                "tasks",
+                "widget_layouts",
+                "widgets",
             ]
         );
     }

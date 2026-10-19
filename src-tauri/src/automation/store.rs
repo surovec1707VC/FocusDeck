@@ -12,6 +12,7 @@ struct Row {
     id: String,
     name: String,
     enabled: bool,
+    module_id: String,
     trigger_json: String,
     actions_json: String,
     last_run_at: Option<String>,
@@ -28,6 +29,7 @@ impl TryFrom<Row> for Automation {
             id: r.id,
             name: r.name,
             enabled: r.enabled,
+            module_id: r.module_id,
             last_run_at: r.last_run_at,
             created_at: r.created_at,
             updated_at: r.updated_at,
@@ -45,13 +47,17 @@ pub struct AutomationLog {
 }
 
 pub async fn list(pool: &SqlitePool) -> AppResult<Vec<Automation>> {
-    let rows = sqlx::query_as::<_, Row>("SELECT * FROM automations ORDER BY created_at, rowid").fetch_all(pool).await?;
+    let rows = sqlx::query_as::<_, Row>("SELECT * FROM automations ORDER BY created_at, rowid")
+        .fetch_all(pool)
+        .await?;
     // A row that no longer parses (e.g. a removed action type) is skipped, not fatal.
     Ok(rows
         .into_iter()
         .filter_map(|r| {
             let id = r.id.clone();
-            Automation::try_from(r).map_err(|e| tracing::warn!(automation = %id, "unreadable automation: {e}")).ok()
+            Automation::try_from(r)
+                .map_err(|e| tracing::warn!(automation = %id, "unreadable automation: {e}"))
+                .ok()
         })
         .collect())
 }
@@ -68,10 +74,11 @@ pub async fn get(pool: &SqlitePool, id: &str) -> AppResult<Automation> {
 pub async fn create(pool: &SqlitePool, input: &AutomationInput) -> AppResult<Automation> {
     input.validate()?;
     let id = new_id();
-    sqlx::query("INSERT INTO automations (id, name, enabled, trigger_json, actions_json) VALUES (?, ?, ?, ?, ?)")
+    sqlx::query("INSERT INTO automations (id, name, enabled, module_id, trigger_json, actions_json) VALUES (?, ?, ?, ?, ?, ?)")
         .bind(&id)
         .bind(input.name.trim())
         .bind(input.enabled)
+        .bind(input.module_id())
         .bind(serde_json::to_string(&input.trigger)?)
         .bind(serde_json::to_string(&input.actions)?)
         .execute(pool)
@@ -82,10 +89,11 @@ pub async fn create(pool: &SqlitePool, input: &AutomationInput) -> AppResult<Aut
 pub async fn update(pool: &SqlitePool, id: &str, input: &AutomationInput) -> AppResult<Automation> {
     input.validate()?;
     let n = sqlx::query(
-        "UPDATE automations SET name = ?, enabled = ?, trigger_json = ?, actions_json = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE automations SET name = ?, enabled = ?, module_id = ?, trigger_json = ?, actions_json = ?, updated_at = datetime('now') WHERE id = ?",
     )
     .bind(input.name.trim())
     .bind(input.enabled)
+    .bind(input.module_id())
     .bind(serde_json::to_string(&input.trigger)?)
     .bind(serde_json::to_string(&input.actions)?)
     .bind(id)
@@ -108,49 +116,65 @@ pub async fn set_enabled(pool: &SqlitePool, id: &str, enabled: bool) -> AppResul
 }
 
 pub async fn delete(pool: &SqlitePool, id: &str) -> AppResult<()> {
-    sqlx::query("DELETE FROM automations WHERE id = ?").bind(id).execute(pool).await?;
+    sqlx::query("DELETE FROM automations WHERE id = ?")
+        .bind(id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
 pub async fn mark_run(pool: &SqlitePool, id: &str, at: &str) -> AppResult<()> {
-    sqlx::query("UPDATE automations SET last_run_at = ? WHERE id = ?").bind(at).bind(id).execute(pool).await?;
+    sqlx::query("UPDATE automations SET last_run_at = ? WHERE id = ?")
+        .bind(at)
+        .bind(id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
-pub async fn log(pool: &SqlitePool, id: &str, status: &str, message: &str) -> AppResult<()> {
+/// Appends a run record, keeping the newest `keep` entries per automation.
+pub async fn log(pool: &SqlitePool, id: &str, status: &str, message: &str, keep: i64) -> AppResult<()> {
     sqlx::query("INSERT INTO automation_logs (automation_id, status, message) VALUES (?, ?, ?)")
         .bind(id)
         .bind(status)
         .bind(message)
         .execute(pool)
         .await?;
-    // Keep the log bounded: the newest 500 entries per automation.
     sqlx::query(
         "DELETE FROM automation_logs WHERE automation_id = ? AND id NOT IN
-           (SELECT id FROM automation_logs WHERE automation_id = ? ORDER BY id DESC LIMIT 500)",
+           (SELECT id FROM automation_logs WHERE automation_id = ? ORDER BY id DESC LIMIT ?)",
     )
     .bind(id)
     .bind(id)
+    .bind(keep.max(1))
     .execute(pool)
     .await?;
     Ok(())
 }
 
-pub async fn logs(pool: &SqlitePool, id: Option<&str>, limit: i64) -> AppResult<Vec<AutomationLog>> {
+pub async fn logs(
+    pool: &SqlitePool,
+    id: Option<&str>,
+    limit: i64,
+) -> AppResult<Vec<AutomationLog>> {
     let limit = limit.clamp(1, 500);
     Ok(match id {
         Some(id) => {
-            sqlx::query_as::<_, AutomationLog>("SELECT * FROM automation_logs WHERE automation_id = ? ORDER BY id DESC LIMIT ?")
-                .bind(id)
-                .bind(limit)
-                .fetch_all(pool)
-                .await?
+            sqlx::query_as::<_, AutomationLog>(
+                "SELECT * FROM automation_logs WHERE automation_id = ? ORDER BY id DESC LIMIT ?",
+            )
+            .bind(id)
+            .bind(limit)
+            .fetch_all(pool)
+            .await?
         }
         None => {
-            sqlx::query_as::<_, AutomationLog>("SELECT * FROM automation_logs ORDER BY id DESC LIMIT ?")
-                .bind(limit)
-                .fetch_all(pool)
-                .await?
+            sqlx::query_as::<_, AutomationLog>(
+                "SELECT * FROM automation_logs ORDER BY id DESC LIMIT ?",
+            )
+            .bind(limit)
+            .fetch_all(pool)
+            .await?
         }
     })
 }
@@ -164,8 +188,12 @@ mod tests {
         AutomationInput {
             name: "Перерыв".into(),
             enabled: true,
+            module_id: None,
             trigger: Trigger::Interval { minutes: 50 },
-            actions: vec![Action::Notify { title: "Пора отдохнуть".into(), body: "".into() }],
+            actions: vec![Action::Notify {
+                title: "Пора отдохнуть".into(),
+                body: "".into(),
+            }],
         }
     }
 
@@ -178,15 +206,21 @@ mod tests {
 
         let mut changed = input();
         changed.name = "Длинный перерыв".into();
-        assert_eq!(update(&pool, &a.id, &changed).await.unwrap().name, "Длинный перерыв");
+        assert_eq!(
+            update(&pool, &a.id, &changed).await.unwrap().name,
+            "Длинный перерыв"
+        );
         assert!(!set_enabled(&pool, &a.id, false).await.unwrap().enabled);
 
-        log(&pool, &a.id, "ok", "done").await.unwrap();
+        log(&pool, &a.id, "ok", "done", 500).await.unwrap();
         assert_eq!(logs(&pool, Some(&a.id), 10).await.unwrap().len(), 1);
 
         delete(&pool, &a.id).await.unwrap();
         assert!(list(&pool).await.unwrap().is_empty());
-        assert!(logs(&pool, None, 10).await.unwrap().is_empty(), "logs cascade on delete");
+        assert!(
+            logs(&pool, None, 10).await.unwrap().is_empty(),
+            "logs cascade on delete"
+        );
     }
 
     #[tokio::test]

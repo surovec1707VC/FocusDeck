@@ -31,6 +31,7 @@ tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 uuid = { version = "1.28.0", features = ["v4"] }
 chrono = { version = "0.4.45", features = ["serde"] }
+tauri-plugin-dialog = "2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

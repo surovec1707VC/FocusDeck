@@ -1,6 +1,7 @@
 //! Global hotkeys: the show/hide window shortcut and hotkey-triggered
-//! automations. Registered only when the setting, the «Горячие клавиши»
-//! module and the matching permission are all on.
+//! automations. Nothing is registered unless the «Глобальные горячие
+//! клавиши» module, the setting and the permission are all on. Automation
+//! shortcuts also need the Automations module and the automation's own module.
 
 use std::str::FromStr;
 
@@ -9,7 +10,8 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, S
 
 use crate::automation::{engine, store, types::Trigger};
 use crate::error::{AppError, AppResult};
-use crate::modules::registry::{self, MODULE_AUTOMATIONS};
+use crate::modules::catalog::{AUTOMATIONS, HOTKEYS};
+use crate::modules::registry;
 use crate::permissions::{self, PERM_GLOBAL_HOTKEYS};
 use crate::state::AppState;
 
@@ -39,7 +41,7 @@ pub fn handle(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
     }
 }
 
-/// Re-registers all shortcuts from current settings and automations.
+/// Re-registers all shortcuts from current modules, settings and automations.
 /// Fails only if the window shortcut can't be registered; automation
 /// shortcuts that are taken are logged and skipped.
 pub async fn sync(app: &AppHandle) -> AppResult<()> {
@@ -50,7 +52,7 @@ pub async fn sync(app: &AppHandle) -> AppResult<()> {
 
     let settings = state.settings();
     let allowed = settings.global_hotkeys_enabled
-        && registry::is_enabled(&state.db, "hotkeys").await?
+        && registry::is_enabled(&state.db, HOTKEYS).await?
         && permissions::is_granted(&state.db, PERM_GLOBAL_HOTKEYS).await?;
     if !allowed {
         tracing::info!("global hotkeys are off");
@@ -74,13 +76,15 @@ pub async fn sync(app: &AppHandle) -> AppResult<()> {
         register(&settings.toggle_window_hotkey, HotkeyTarget::ToggleWindow)?;
     }
 
-    if registry::is_enabled(&state.db, MODULE_AUTOMATIONS).await? {
+    if registry::is_enabled(&state.db, AUTOMATIONS).await? {
         for a in store::list(&state.db).await?.into_iter().filter(|a| a.enabled) {
-            if let Trigger::Hotkey { shortcut } = &a.trigger {
-                if let Err(e) = register(shortcut, HotkeyTarget::Automation(a.id.clone())) {
-                    tracing::warn!(automation = %a.id, "{e}");
-                    let _ = store::log(&state.db, &a.id, "error", &e.to_string()).await;
-                }
+            let Trigger::Hotkey { shortcut } = &a.trigger else { continue };
+            if !registry::is_enabled(&state.db, &a.module_id).await? {
+                continue;
+            }
+            if let Err(e) = register(shortcut, HotkeyTarget::Automation(a.id.clone())) {
+                tracing::warn!(automation = %a.id, "{e}");
+                let _ = store::log(&state.db, &a.id, "error", &e.to_string(), 500).await;
             }
         }
     }

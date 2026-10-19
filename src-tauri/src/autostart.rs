@@ -10,8 +10,21 @@ pub const MINIMIZED_FLAG: &str = "--minimized";
 
 pub fn set(app: &AppHandle, enabled: bool) -> AppResult<()> {
     let launcher = app.autolaunch();
-    let result = if enabled { launcher.enable() } else { launcher.disable() };
-    result.map_err(|e| anyhow::anyhow!("не удалось {} автозапуск: {e}", if enabled { "включить" } else { "выключить" }))?;
+    let result = if enabled {
+        launcher.enable()
+    } else {
+        launcher.disable()
+    };
+    result.map_err(|e| {
+        anyhow::anyhow!(
+            "не удалось {} автозапуск: {e}",
+            if enabled {
+                "включить"
+            } else {
+                "выключить"
+            }
+        )
+    })?;
     tracing::info!(enabled, "autostart changed");
     Ok(())
 }
