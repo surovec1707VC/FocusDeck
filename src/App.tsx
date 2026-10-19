@@ -1,51 +1,57 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useEffect, useState } from "react";
+import { Route, Routes, useNavigate } from "react-router-dom";
+import { listen } from "@tauri-apps/api/event";
+import Sidebar from "./components/Sidebar";
+import TitleBar from "./components/TitleBar";
+import Toasts from "./components/Toasts";
+import { EVENTS } from "./lib/api";
+import About from "./pages/About";
+import Automations from "./pages/Automations";
+import Dashboard from "./pages/Dashboard";
+import Layouts from "./pages/Layouts";
+import Modules from "./pages/Modules";
+import Permissions from "./pages/Permissions";
+import Settings from "./pages/Settings";
+import Widgets from "./pages/Widgets";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+export default function App() {
+  const navigate = useNavigate();
+  const [maximized, setMaximized] = useState(false);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  // The tray menu can open a page (e.g. «Настройки»).
+  useEffect(() => {
+    const unlisten = listen<string>(EVENTS.navigate, (e) => navigate(e.payload));
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, [navigate]);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    // The window is transparent: this shell is the visible surface (rounded unless maximized).
+    <div
+      className={`flex h-full flex-col overflow-hidden border border-zinc-300/70 bg-zinc-100/95 dark:border-zinc-800 dark:bg-zinc-950/92 ${
+        maximized ? "" : "rounded-xl"
+      }`}
+    >
+      <TitleBar onMaximizedChange={setMaximized} />
+      <div className="flex min-h-0 flex-1">
+        <Sidebar />
+        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="mx-auto max-w-6xl">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/widgets" element={<Widgets />} />
+              <Route path="/layouts" element={<Layouts />} />
+              <Route path="/automations" element={<Automations />} />
+              <Route path="/modules" element={<Modules />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/permissions" element={<Permissions />} />
+              <Route path="/about" element={<About />} />
+            </Routes>
+          </div>
+        </main>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+      <Toasts />
+    </div>
   );
 }
-
-export default App;

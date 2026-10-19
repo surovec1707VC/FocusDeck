@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* Dark mode follows the `dark` class on <html> (set from the theme setting). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif;
+  --color-accent-400: oklch(0.72 0.15 265);
+  --color-accent-500: oklch(0.64 0.17 265);
+  --color-accent-600: oklch(0.56 0.18 265);
+}
+
+/* The window itself is transparent; the app shell paints its own surface. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+}
+
+body {
+  @apply font-sans text-sm text-zinc-900 antialiased select-none dark:text-zinc-100;
+}
+
+input,
+textarea,
+select {
+  @apply select-text;
+}
+
+/* Thin scrollbars that match both themes. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(113 113 122 / 0.5) transparent;
+}
+
+@utility card {
+  @apply rounded-xl border border-zinc-200/80 bg-white/80 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70;
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none transition
+    focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30
+    disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition
+    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500
+    disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-accent-600 text-white hover:bg-accent-500;
+}
+
+@utility btn-secondary {
+  @apply btn border border-zinc-300 bg-white hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800;
+}
+
+@utility btn-ghost {
+  @apply btn text-zinc-600 hover:bg-zinc-200/70 dark:text-zinc-400 dark:hover:bg-zinc-800;
+}
+
+@utility btn-danger {
+  @apply btn text-red-600 hover:bg-red-500/10 dark:text-red-400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
