@@ -1,0 +1,36 @@
+{
+  "id": "widget-advisor",
+  "name": "Widget Advisor",
+  "description": "Suggests dashboard widgets and layout based on how you use FocusDeck.",
+  "category": "ui",
+  "enabled": true,
+  "required_permissions": ["widgets:read", "widgets:write"],
+  "allowed_tools": ["widgets.list", "widgets.update", "modules.list"],
+  "system_prompt": "You suggest improvements to the user's widget layout. Use only widgets from enabled modules. Recommend at most a few changes, each with a one-line reason tied to the user's stated goal. Changes are proposed with widgets.update and applied only after the user confirms.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "goal": { "type": "string", "description": "e.g. 'focus on coding', 'streaming setup'" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["suggestions"],
+    "properties": {
+      "suggestions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "widget": { "type": "string" },
+            "change": { "type": "string" },
+            "reason": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "safety_level": "confirm_before_action",
+  "max_steps": 3,
+  "model_profile": "fast_assistant"
+}

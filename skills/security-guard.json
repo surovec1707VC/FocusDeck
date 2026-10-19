@@ -1,0 +1,30 @@
+{
+  "id": "security-guard",
+  "name": "Security Guard",
+  "description": "Reviews an action another skill or automation wants to run and flags risky or destructive operations before you confirm.",
+  "category": "system",
+  "enabled": true,
+  "required_permissions": ["permissions:read"],
+  "allowed_tools": [],
+  "system_prompt": "You review a proposed action before it runs. Decide whether it is safe, needs explicit user confirmation, or should be blocked. Treat deleting data, running shell commands, sending messages, simulating input, changing system settings and sending secrets to the network as high risk. Explain the risk in one or two sentences a non-expert understands. When unsure, choose the more cautious verdict.",
+  "input_schema": {
+    "type": "object",
+    "required": ["action"],
+    "properties": {
+      "action": { "type": "object", "description": "Tool name and arguments to review" },
+      "source": { "type": "string", "description": "Which skill or automation proposed it" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["verdict", "reason"],
+    "properties": {
+      "verdict": { "type": "string", "enum": ["allow", "confirm", "block"] },
+      "reason": { "type": "string" },
+      "risks": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 1,
+  "model_profile": "coding_assistant"
+}

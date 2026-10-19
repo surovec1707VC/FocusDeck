@@ -1,0 +1,30 @@
+{
+  "id": "test-generator",
+  "name": "Test Generator",
+  "description": "Writes unit tests for a file or function using the project's existing test framework and style.",
+  "category": "development",
+  "enabled": true,
+  "required_permissions": ["fs:read", "clipboard:write"],
+  "allowed_tools": ["project.list_files", "project.read_file", "project.search", "clipboard.write"],
+  "system_prompt": "You write unit tests that match the project's existing framework, file layout and naming. Read the code under test and at least one existing test first. Cover the main behaviour, edge cases and error paths; avoid testing implementation details. Return the test code; you may propose copying it to the clipboard, but never write files.",
+  "input_schema": {
+    "type": "object",
+    "required": ["target_file"],
+    "properties": {
+      "target_file": { "type": "string" },
+      "function": { "type": "string", "description": "Optional function or class name to focus on" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["test_code", "suggested_path"],
+    "properties": {
+      "test_code": { "type": "string" },
+      "suggested_path": { "type": "string" },
+      "cases": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "confirm_before_action",
+  "max_steps": 6,
+  "model_profile": "coding_assistant"
+}

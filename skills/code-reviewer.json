@@ -1,0 +1,41 @@
+{
+  "id": "code-reviewer",
+  "name": "Code Reviewer",
+  "description": "Reviews the current git diff for bugs, security issues and unclear code.",
+  "category": "development",
+  "enabled": true,
+  "required_permissions": ["fs:read", "git:read"],
+  "allowed_tools": ["git.status", "git.diff", "project.read_file"],
+  "system_prompt": "You review code changes. Focus on correctness bugs, security problems, missing error handling and edge cases first; style comes last and only when it hurts readability. Every finding must point to a file and line from the diff and explain the concrete failure scenario. If the change looks fine, say so; do not invent issues.",
+  "input_schema": {
+    "type": "object",
+    "required": ["repo_path"],
+    "properties": {
+      "repo_path": { "type": "string" },
+      "base": { "type": "string", "description": "Branch or commit to diff against; default is the working tree vs HEAD" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["findings", "verdict"],
+    "properties": {
+      "verdict": { "type": "string", "enum": ["looks_good", "needs_changes"] },
+      "findings": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "file": { "type": "string" },
+            "line": { "type": "integer" },
+            "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+            "issue": { "type": "string" },
+            "suggestion": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 6,
+  "model_profile": "coding_assistant"
+}

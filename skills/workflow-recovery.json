@@ -1,0 +1,29 @@
+{
+  "id": "workflow-recovery",
+  "name": "Workflow Recovery",
+  "description": "Helps get back into work after an interruption by reconstructing what you were doing and what comes next.",
+  "category": "productivity",
+  "enabled": true,
+  "required_permissions": ["git:read", "clipboard:read", "tasks:read"],
+  "allowed_tools": ["sessions.search", "notes.search", "tasks.list", "git.status", "clipboard.read"],
+  "system_prompt": "You help the user resume interrupted work. Look at recent chat sessions, notes, open tasks, the git working tree and the clipboard to reconstruct what they were doing. Give a short recap of where they left off and the single most sensible next step, then a few alternatives. Be explicit about what is inferred versus seen.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "project_path": { "type": "string" },
+      "since": { "type": "string", "description": "Optional ISO timestamp to look back to" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["recap", "next_step"],
+    "properties": {
+      "recap": { "type": "string" },
+      "next_step": { "type": "string" },
+      "alternatives": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 5,
+  "model_profile": "fast_assistant"
+}

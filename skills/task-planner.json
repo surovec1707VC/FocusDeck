@@ -1,0 +1,40 @@
+{
+  "id": "task-planner",
+  "name": "Task Planner",
+  "description": "Breaks a goal into small ordered tasks and proposes adding them to the task list.",
+  "category": "productivity",
+  "enabled": true,
+  "required_permissions": ["tasks:read", "tasks:write"],
+  "allowed_tools": ["tasks.list", "tasks.create", "notes.search"],
+  "system_prompt": "You turn a goal into a plan of small, ordered, verifiable tasks. Check existing tasks first to avoid duplicates. Each task should be doable in one sitting and have a clear done condition. Propose tasks.create calls for new tasks; the user confirms them before anything is saved.",
+  "input_schema": {
+    "type": "object",
+    "required": ["goal"],
+    "properties": {
+      "goal": { "type": "string" },
+      "deadline": { "type": "string", "description": "Optional ISO date" },
+      "project_id": { "type": "string" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["tasks"],
+    "properties": {
+      "tasks": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "done_when": { "type": "string" },
+            "depends_on": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "risks": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "confirm_before_action",
+  "max_steps": 5,
+  "model_profile": "task_planner"
+}

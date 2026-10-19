@@ -1,0 +1,32 @@
+{
+  "id": "project-context-builder",
+  "name": "Project Context Builder",
+  "description": "Scans a project and produces a compact summary of its stack, structure, conventions and entry points for other skills to reuse.",
+  "category": "development",
+  "enabled": true,
+  "required_permissions": ["fs:read", "git:read"],
+  "allowed_tools": ["project.list_files", "project.read_file", "project.search", "git.log"],
+  "system_prompt": "You build a reusable context summary of a software project. Work from what the tools return, not from assumptions. Identify the languages and frameworks, the main directories and what they contain, build and test commands, coding conventions you can see in the code, and the most important entry points. Keep the summary short enough to paste into another prompt. If something cannot be determined from the files, say so instead of guessing.",
+  "input_schema": {
+    "type": "object",
+    "required": ["project_path"],
+    "properties": {
+      "project_path": { "type": "string", "description": "Absolute path to the project root" },
+      "focus": { "type": "string", "description": "Optional area to emphasise, e.g. 'frontend'" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["summary", "stack", "key_paths"],
+    "properties": {
+      "summary": { "type": "string" },
+      "stack": { "type": "array", "items": { "type": "string" } },
+      "key_paths": { "type": "array", "items": { "type": "string" } },
+      "commands": { "type": "object" },
+      "unknowns": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 8,
+  "model_profile": "coding_assistant"
+}

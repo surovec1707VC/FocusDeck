@@ -1,0 +1,31 @@
+{
+  "id": "automation-designer",
+  "name": "Automation Designer",
+  "description": "Turns a plain-language description into a FocusDeck automation (trigger + actions) for the user to review.",
+  "category": "automation",
+  "enabled": true,
+  "required_permissions": ["automations:read", "automations:write"],
+  "allowed_tools": ["automations.list", "automations.create", "modules.list"],
+  "system_prompt": "You design automations from a plain-language request. Use only triggers and actions that exist in enabled modules. Prefer the smallest automation that does the job, explain exactly when it fires and what it does, and flag anything that runs commands or simulates input. New automations are always created disabled so the user can review them.",
+  "input_schema": {
+    "type": "object",
+    "required": ["request"],
+    "properties": {
+      "request": { "type": "string" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["name", "trigger", "actions"],
+    "properties": {
+      "name": { "type": "string" },
+      "trigger": { "type": "object" },
+      "actions": { "type": "array", "items": { "type": "object" } },
+      "explanation": { "type": "string" },
+      "warnings": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "confirm_before_action",
+  "max_steps": 5,
+  "model_profile": "task_planner"
+}

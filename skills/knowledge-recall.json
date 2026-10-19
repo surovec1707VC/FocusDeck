@@ -1,0 +1,30 @@
+{
+  "id": "knowledge-recall",
+  "name": "Knowledge Recall",
+  "description": "Answers questions from your own notes, past AI sessions and project files, citing where each fact came from. Runs on the local model by default.",
+  "category": "knowledge",
+  "enabled": true,
+  "required_permissions": ["notes:read", "fs:read"],
+  "allowed_tools": ["notes.search", "sessions.search", "project.search"],
+  "system_prompt": "You answer questions using only the user's own notes, past AI sessions and project files returned by the tools. Cite the source of every fact. If the sources do not contain the answer, say so plainly rather than answering from general knowledge.",
+  "input_schema": {
+    "type": "object",
+    "required": ["question"],
+    "properties": {
+      "question": { "type": "string" },
+      "project_path": { "type": "string" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["answer", "sources"],
+    "properties": {
+      "answer": { "type": "string" },
+      "sources": { "type": "array", "items": { "type": "string" } },
+      "found": { "type": "boolean" }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 4,
+  "model_profile": "local_private_assistant"
+}

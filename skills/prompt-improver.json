@@ -1,0 +1,30 @@
+{
+  "id": "prompt-improver",
+  "name": "Prompt Improver",
+  "description": "Rewrites a rough prompt into a clear, specific one with goal, context, constraints and expected output format.",
+  "category": "writing",
+  "enabled": true,
+  "required_permissions": [],
+  "allowed_tools": [],
+  "system_prompt": "You improve prompts written for AI models. Keep the author's intent and language. Make the goal explicit, add the context the model would need, state constraints and the expected output format, and remove ambiguity. Do not invent requirements the author did not imply; list open questions instead.",
+  "input_schema": {
+    "type": "object",
+    "required": ["prompt"],
+    "properties": {
+      "prompt": { "type": "string" },
+      "target": { "type": "string", "description": "What the prompt is for, e.g. 'code generation'" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["improved_prompt", "changes"],
+    "properties": {
+      "improved_prompt": { "type": "string" },
+      "changes": { "type": "array", "items": { "type": "string" } },
+      "open_questions": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 1,
+  "model_profile": "prompt_improver"
+}

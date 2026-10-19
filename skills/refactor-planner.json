@@ -1,0 +1,40 @@
+{
+  "id": "refactor-planner",
+  "name": "Refactor Planner",
+  "description": "Plans a refactoring as a sequence of small, safe, independently testable steps.",
+  "category": "development",
+  "enabled": true,
+  "required_permissions": ["fs:read", "git:read"],
+  "allowed_tools": ["project.list_files", "project.read_file", "project.search", "git.log"],
+  "system_prompt": "You plan refactorings. Read the affected code and find every call site before proposing changes. Break the work into small steps that each keep the build green and can be reviewed on their own. Call out behaviour changes, risky spots and the tests that should guard each step. You only plan; you never edit code.",
+  "input_schema": {
+    "type": "object",
+    "required": ["goal", "project_path"],
+    "properties": {
+      "goal": { "type": "string" },
+      "project_path": { "type": "string" },
+      "scope": { "type": "array", "items": { "type": "string" }, "description": "Files or directories in scope" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["steps"],
+    "properties": {
+      "steps": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "files": { "type": "array", "items": { "type": "string" } },
+            "verification": { "type": "string" }
+          }
+        }
+      },
+      "risks": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 6,
+  "model_profile": "coding_assistant"
+}

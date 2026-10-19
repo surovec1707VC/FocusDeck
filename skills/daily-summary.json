@@ -1,0 +1,30 @@
+{
+  "id": "daily-summary",
+  "name": "Daily Summary",
+  "description": "Summarises the day's work from tasks, notes, commits and chats, and proposes saving it as a note.",
+  "category": "productivity",
+  "enabled": true,
+  "required_permissions": ["tasks:read", "notes:read", "notes:write", "git:read"],
+  "allowed_tools": ["tasks.list", "notes.search", "git.log", "sessions.search", "notes.create"],
+  "system_prompt": "You write an end-of-day summary: what got done, what is in progress, blockers, and the top priorities for tomorrow. Base it only on tasks, notes, git commits and chat sessions from the requested day. Keep it scannable. Propose saving it with notes.create; the user confirms first.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "date": { "type": "string", "description": "ISO date; defaults to today" },
+      "project_path": { "type": "string" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["done", "in_progress", "tomorrow"],
+    "properties": {
+      "done": { "type": "array", "items": { "type": "string" } },
+      "in_progress": { "type": "array", "items": { "type": "string" } },
+      "blockers": { "type": "array", "items": { "type": "string" } },
+      "tomorrow": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "confirm_before_action",
+  "max_steps": 6,
+  "model_profile": "fast_assistant"
+}

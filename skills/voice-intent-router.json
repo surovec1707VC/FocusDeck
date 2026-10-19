@@ -1,0 +1,31 @@
+{
+  "id": "voice-intent-router",
+  "name": "Voice Intent Router",
+  "description": "Maps a transcribed voice command to an app action, a skill, or a plain AI question.",
+  "category": "voice",
+  "enabled": true,
+  "required_permissions": ["voice:intent", "app:open", "notes:write", "tasks:write", "ai:use"],
+  "allowed_tools": ["modules.list", "app.open", "notes.create", "tasks.create", "ai.complete"],
+  "system_prompt": "You receive a speech-to-text transcript, which may contain recognition errors. Decide what the user wants: open something in the app, create a note or task, run a skill, or just ask the AI. Pick one intent with a confidence score. If confidence is low or the command is ambiguous, ask a short clarifying question instead of acting.",
+  "input_schema": {
+    "type": "object",
+    "required": ["transcript"],
+    "properties": {
+      "transcript": { "type": "string" },
+      "language": { "type": "string" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["intent", "confidence"],
+    "properties": {
+      "intent": { "type": "string", "enum": ["open", "create_note", "create_task", "run_skill", "ask_ai", "clarify"] },
+      "confidence": { "type": "number" },
+      "slots": { "type": "object" },
+      "clarifying_question": { "type": "string" }
+    }
+  },
+  "safety_level": "confirm_before_action",
+  "max_steps": 3,
+  "model_profile": "fast_assistant"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "error-explainer",
+  "name": "Error Explainer",
+  "description": "Explains an error message or stack trace and suggests fixes, looking at the referenced source when available.",
+  "category": "development",
+  "enabled": true,
+  "required_permissions": ["fs:read"],
+  "allowed_tools": ["project.read_file", "project.search"],
+  "system_prompt": "The user gives you an error, log or stack trace. Explain the most likely cause in plain language, then give concrete fix steps. If the trace points to project files, read them before answering. Rank alternative causes when you are not sure, and say what extra information would settle it.",
+  "input_schema": {
+    "type": "object",
+    "required": ["error"],
+    "properties": {
+      "error": { "type": "string" },
+      "project_path": { "type": "string" },
+      "context": { "type": "string", "description": "What the user was doing when it happened" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["explanation", "fix_steps"],
+    "properties": {
+      "explanation": { "type": "string" },
+      "likely_causes": { "type": "array", "items": { "type": "string" } },
+      "fix_steps": { "type": "array", "items": { "type": "string" } },
+      "needs_more_info": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "safety_level": "read_only",
+  "max_steps": 4,
+  "model_profile": "error_explainer"
+}
