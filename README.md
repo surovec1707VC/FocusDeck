@@ -35,7 +35,8 @@ npm run tauri build
 - Глобальная горячая клавиша `Ctrl+Alt+D` показывает или скрывает окно. Есть автоматизации по хоткею.
 - Опциональный автозапуск с Windows (запуск свёрнутым в трей).
 - Тёмная тема по умолчанию, светлая и системная; русский интерфейс; адаптивная вёрстка.
-- Страницы: Обзор, Виджеты, Макеты, Автоматизации, Модули, Настройки, Разрешения, О программе.
+- Страницы: Обзор, Виджеты, Макеты, Автоматизации, Центр управления, Модули, Настройки, Разрешения, О программе.
+- Каждая функция — модуль (21 модуль, 13 категорий): включение/отключение, настройки в JSON, права, версия, журнал, health check; экспорт и импорт конфигурации в JSON. API — [docs/api.md](docs/api.md).
 
 ## Структура проекта
 ```
@@ -45,7 +46,7 @@ src/                        frontend (React + TypeScript + Vite + Tailwind CSS 4
   i18n/                     русская локализация
   lib/                      API к Rust, тема, настройки, хуки
   components/               заголовок окна, меню, тосты, UI, виджеты
-  pages/                    8 страниц
+  pages/                    9 страниц (в т.ч. Центр управления)
 src-tauri/                  backend (Rust)
   tauri.conf.json           окно: frameless, transparent, скрыто до setup
   capabilities/             права фронтенда (только управление окном и opener)
@@ -53,8 +54,9 @@ src-tauri/                  backend (Rust)
     lib.rs                  запуск приложения
     error.rs  logging.rs    ошибки (thiserror/anyhow) и tracing
     state.rs                общее состояние
-    db/                     SQLite и миграции (db/migrations/0001_init.sql)
-    modules/                модули приложения
+    db/                     SQLite и миграции (db/migrations/0001_init.sql, 0002_module_registry.sql)
+    modules/                Module Registry: каталог, настройки, эффекты, health check, экспорт/импорт
+    background.rs           фоновые задачи модулей
     automation/             автоматизации: типы, хранилище, движок
     plugins/                регистрация Tauri-плагинов
     settings/  permissions/  workspace/
