@@ -9,7 +9,10 @@
 | serde_json | 1.0.x | JSON | installed | — |
 | sqlx (runtime-tokio, sqlite, chrono, uuid, json, migrate, macros) | 0.9.0 | SQLite + миграции | installed | макросы `query!` требуют `DATABASE_URL` или `.sqlx` offline-кеш — используем `query`/`query_as` без макросов |
 | reqwest (json, stream) | 0.13.5 | HTTP к AI-провайдерам | installed | — |
-| eventsource-stream | latest | SSE-парсинг поверх `reqwest::Response::bytes_stream()` (reqwest 0.13) | installed | — |`n| futures-util | latest | `StreamExt` для стримов | installed | — |`n| ~~reqwest-eventsource~~ | — | — | removed | тянул reqwest 0.12. Замечание: reqwest 0.12 всё равно остаётся в дереве через `tauri-plugin-http` — это нормально, типы не пересекаются |`n| tracing | 0.1.44 | логирование | installed | — |
+| eventsource-stream | 0.2.3 | SSE-парсинг поверх `reqwest::Response::bytes_stream()` (reqwest 0.13) | installed | — |
+| futures-util | 0.3.34 | `StreamExt` для стримов | installed | — |
+| ~~reqwest-eventsource~~ | — | — | removed | тянул reqwest 0.12. Замечание: reqwest 0.12 всё равно остаётся в дереве через `tauri-plugin-http` — это нормально, типы не пересекаются |
+| tracing | 0.1.44 | логирование | installed | — |
 | tracing-subscriber (env-filter) | 0.3.23 | вывод логов | installed | может конфликтовать с `tauri-plugin-log` (оба ставят глобальный logger) — инициализировать только один |
 | thiserror | 2.0.21 | типизированные ошибки | installed | — |
 | anyhow | 1.0.104 | ошибки в прикладном коде | installed | — |
