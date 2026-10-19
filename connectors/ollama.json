@@ -1,0 +1,22 @@
+{
+  "id": "ollama",
+  "name": "Ollama",
+  "description": "Local LLM server. Used by the AI Router for private, offline chats.",
+  "category": "ai",
+  "enabled": true,
+  "auth_type": "local",
+  "permissions": ["network:localhost"],
+  "actions": [
+    { "id": "chat", "description": "Send a chat request to a local model", "mutating": false },
+    { "id": "list_models", "description": "List installed models", "mutating": false }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "base_url": { "type": "string", "title": "Server URL", "default": "http://localhost:11434" }
+    }
+  },
+  "health_check": { "type": "http", "url": "{base_url}/api/version" },
+  "docs_url": "https://github.com/ollama/ollama/blob/main/docs/api.md"
+}

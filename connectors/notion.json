@@ -1,0 +1,23 @@
+{
+  "id": "notion",
+  "name": "Notion",
+  "description": "Search pages and save notes to Notion through an internal integration token.",
+  "category": "knowledge",
+  "enabled": false,
+  "auth_type": "api_key",
+  "permissions": ["network:internet", "notion:read", "notion:write"],
+  "actions": [
+    { "id": "search", "description": "Search pages and databases", "mutating": false },
+    { "id": "create_page", "description": "Create a page in a database", "mutating": true },
+    { "id": "append_blocks", "description": "Append content to a page", "mutating": true }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "default_database_id": { "type": "string", "title": "Default database ID", "default": "" }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://developers.notion.com/reference/intro"
+}

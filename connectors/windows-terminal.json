@@ -1,0 +1,21 @@
+{
+  "id": "windows-terminal",
+  "name": "Windows Terminal",
+  "description": "Open Windows Terminal tabs in a chosen folder and profile.",
+  "category": "system",
+  "enabled": false,
+  "auth_type": "local",
+  "permissions": ["app:launch"],
+  "actions": [
+    { "id": "open_tab", "description": "Open a new tab in a directory", "mutating": true }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "profile": { "type": "string", "title": "Default profile", "default": "Windows PowerShell" }
+    }
+  },
+  "health_check": { "type": "executable", "program": "wt" },
+  "docs_url": "https://learn.microsoft.com/windows/terminal/command-line-arguments"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "clipboard",
+  "name": "Clipboard",
+  "description": "Read and write the system clipboard; feeds Clipboard History.",
+  "category": "system",
+  "enabled": false,
+  "auth_type": "local",
+  "permissions": ["clipboard:read", "clipboard:write"],
+  "actions": [
+    { "id": "read_text", "description": "Read clipboard text", "mutating": false },
+    { "id": "write_text", "description": "Replace clipboard text", "mutating": true }
+  ],
+  "events": [
+    { "id": "changed", "description": "Clipboard content changed" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "watch": { "type": "boolean", "title": "Watch for changes", "default": false }
+    }
+  },
+  "health_check": { "type": "none" },
+  "docs_url": "https://v2.tauri.app/plugin/clipboard/"
+}

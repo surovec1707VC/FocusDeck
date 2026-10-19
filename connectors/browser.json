@@ -1,0 +1,21 @@
+{
+  "id": "browser",
+  "name": "Web Browser",
+  "description": "Open links in your default browser.",
+  "category": "system",
+  "enabled": false,
+  "auth_type": "local",
+  "permissions": ["app:launch"],
+  "actions": [
+    { "id": "open_url", "description": "Open a URL", "mutating": true }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "browser": { "type": "string", "title": "Browser", "enum": ["system", "edge", "chrome", "firefox"], "default": "system" }
+    }
+  },
+  "health_check": { "type": "none" },
+  "docs_url": "https://v2.tauri.app/plugin/opener/"
+}

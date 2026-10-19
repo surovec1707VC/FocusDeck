@@ -1,0 +1,28 @@
+{
+  "id": "obs",
+  "name": "OBS Studio",
+  "description": "Control scenes and streaming through obs-websocket (built into OBS 28+).",
+  "category": "streaming",
+  "enabled": false,
+  "auth_type": "api_key",
+  "permissions": ["network:localhost", "obs:control"],
+  "actions": [
+    { "id": "switch_scene", "description": "Switch the program scene", "mutating": true },
+    { "id": "toggle_source", "description": "Show or hide a source", "mutating": true },
+    { "id": "start_stream", "description": "Start streaming", "mutating": true },
+    { "id": "stop_stream", "description": "Stop streaming", "mutating": true }
+  ],
+  "events": [
+    { "id": "scene_changed", "description": "Program scene changed" },
+    { "id": "stream_state_changed", "description": "Stream started or stopped" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "host": { "type": "string", "title": "Host", "default": "localhost" },
+      "port": { "type": "integer", "title": "Port", "default": 4455 }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md"
+}

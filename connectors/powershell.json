@@ -1,0 +1,22 @@
+{
+  "id": "powershell",
+  "name": "PowerShell",
+  "description": "Run PowerShell scripts. Every run needs explicit confirmation and is limited to allowed folders.",
+  "category": "system",
+  "enabled": false,
+  "auth_type": "local",
+  "permissions": ["shell:execute"],
+  "actions": [
+    { "id": "run_script", "description": "Run a script file or command", "mutating": true }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "allowed_dirs": { "type": "array", "title": "Allowed working folders", "default": [] },
+      "timeout_secs": { "type": "integer", "title": "Timeout (s)", "default": 60 }
+    }
+  },
+  "health_check": { "type": "executable", "program": "powershell" },
+  "docs_url": "https://learn.microsoft.com/powershell/"
+}

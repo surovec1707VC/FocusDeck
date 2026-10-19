@@ -1,0 +1,26 @@
+{
+  "id": "git",
+  "name": "Git",
+  "description": "Read status, diffs and history of local repositories.",
+  "category": "development",
+  "enabled": false,
+  "auth_type": "local",
+  "permissions": ["git:read", "git:write"],
+  "actions": [
+    { "id": "status", "description": "Working tree status", "mutating": false },
+    { "id": "diff", "description": "Diff against HEAD or a branch", "mutating": false },
+    { "id": "log", "description": "Recent commits", "mutating": false },
+    { "id": "commit", "description": "Create a commit from staged changes", "mutating": true }
+  ],
+  "events": [
+    { "id": "repo_changed", "description": "Files in a watched repository changed" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "default_repo": { "type": "string", "title": "Default repository path", "default": "" }
+    }
+  },
+  "health_check": { "type": "executable", "program": "git" },
+  "docs_url": "https://git-scm.com/docs"
+}

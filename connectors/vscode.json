@@ -1,0 +1,22 @@
+{
+  "id": "vscode",
+  "name": "Visual Studio Code",
+  "description": "Open files and folders in VS Code from FocusDeck.",
+  "category": "development",
+  "enabled": false,
+  "auth_type": "local",
+  "permissions": ["app:launch"],
+  "actions": [
+    { "id": "open_folder", "description": "Open a folder in a new window", "mutating": true },
+    { "id": "open_file", "description": "Open a file at a line", "mutating": true }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "reuse_window": { "type": "boolean", "title": "Reuse the last window", "default": true }
+    }
+  },
+  "health_check": { "type": "executable", "program": "code" },
+  "docs_url": "https://code.visualstudio.com/docs/editor/command-line"
+}

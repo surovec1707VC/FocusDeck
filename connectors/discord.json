@@ -1,0 +1,21 @@
+{
+  "id": "discord",
+  "name": "Discord",
+  "description": "Post messages to a Discord channel through a webhook URL.",
+  "category": "communication",
+  "enabled": false,
+  "auth_type": "api_key",
+  "permissions": ["network:internet", "messages:send"],
+  "actions": [
+    { "id": "send_webhook_message", "description": "Post a message to the webhook's channel", "mutating": true }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "username": { "type": "string", "title": "Display name", "default": "FocusDeck" }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://discord.com/developers/docs/resources/webhook"
+}

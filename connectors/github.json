@@ -1,0 +1,27 @@
+{
+  "id": "github",
+  "name": "GitHub",
+  "description": "Pull requests, issues and notifications through the GitHub REST API (personal access token).",
+  "category": "development",
+  "enabled": false,
+  "auth_type": "api_key",
+  "permissions": ["network:internet", "github:read", "github:write"],
+  "actions": [
+    { "id": "list_pull_requests", "description": "Open pull requests for a repository", "mutating": false },
+    { "id": "get_pull_request", "description": "Pull request details and checks", "mutating": false },
+    { "id": "list_notifications", "description": "Unread notifications", "mutating": false },
+    { "id": "create_issue", "description": "Open a new issue", "mutating": true }
+  ],
+  "events": [
+    { "id": "review_requested", "description": "Your review was requested on a pull request" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "api_base": { "type": "string", "title": "API base URL", "default": "https://api.github.com" },
+      "default_owner": { "type": "string", "title": "Default owner/org", "default": "" }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://docs.github.com/rest"
+}

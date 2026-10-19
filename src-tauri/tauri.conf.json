@@ -32,7 +32,8 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../skills/*.json": "skills/"
+      "../skills/*.json": "skills/",
+      "../connectors/*.json": "connectors/"
     }
   }
 }

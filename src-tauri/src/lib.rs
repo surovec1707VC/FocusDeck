@@ -1,4 +1,5 @@
 mod ai;
+mod connectors;
 mod db;
 mod modules;
 mod plugins;
@@ -34,10 +35,18 @@ pub fn run() {
             let skills = ai::skills::SkillRegistry::new(resource_dir(app, "skills"), pool.clone());
             tauri::async_runtime::block_on(skills.reload())?;
 
+            let connectors = connectors::ConnectorRegistry::new(
+                resource_dir(app, "connectors"),
+                pool.clone(),
+                secrets::SecretStore,
+            )?;
+            tauri::async_runtime::block_on(connectors.reload())?;
+
             app.manage(pool);
             app.manage(registry);
             app.manage(router);
             app.manage(skills);
+            app.manage(connectors);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -67,6 +76,16 @@ pub fn run() {
             ai::skills::skills_set_enabled,
             ai::skills::skills_test_run,
             ai::skills::skills_logs,
+            connectors::connectors_list,
+            connectors::connectors_issues,
+            connectors::connectors_reload,
+            connectors::connectors_set_enabled,
+            connectors::connectors_update_settings,
+            connectors::connectors_reset_settings,
+            connectors::connectors_set_secret,
+            connectors::connectors_delete_secret,
+            connectors::connectors_test,
+            connectors::connectors_logs,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

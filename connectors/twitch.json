@@ -1,0 +1,27 @@
+{
+  "id": "twitch",
+  "name": "Twitch",
+  "description": "Chat, clips and stream info through the Twitch API.",
+  "category": "streaming",
+  "enabled": false,
+  "auth_type": "oauth",
+  "permissions": ["network:internet", "twitch:read", "twitch:write"],
+  "actions": [
+    { "id": "send_chat_message", "description": "Send a chat message", "mutating": true },
+    { "id": "create_clip", "description": "Create a clip of the live stream", "mutating": true },
+    { "id": "update_stream_info", "description": "Change title or category", "mutating": true }
+  ],
+  "events": [
+    { "id": "chat_message", "description": "New chat message" },
+    { "id": "follow", "description": "New follower" },
+    { "id": "raid", "description": "Incoming raid" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "channel": { "type": "string", "title": "Channel name", "default": "" }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://dev.twitch.tv/docs/api/"
+}

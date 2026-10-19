@@ -1,0 +1,23 @@
+{
+  "id": "telegram",
+  "name": "Telegram",
+  "description": "Send notifications and receive commands through a Telegram bot.",
+  "category": "communication",
+  "enabled": false,
+  "auth_type": "api_key",
+  "permissions": ["network:internet", "messages:send"],
+  "actions": [
+    { "id": "send_message", "description": "Send a message to the configured chat", "mutating": true }
+  ],
+  "events": [
+    { "id": "message_received", "description": "The bot received a message" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "chat_id": { "type": "string", "title": "Chat ID", "default": "" }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://core.telegram.org/bots/api"
+}

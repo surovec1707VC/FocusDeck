@@ -1,0 +1,25 @@
+{
+  "id": "google-calendar",
+  "name": "Google Calendar",
+  "description": "Show upcoming events and create new ones.",
+  "category": "productivity",
+  "enabled": false,
+  "auth_type": "oauth",
+  "permissions": ["network:internet", "calendar:read", "calendar:write"],
+  "actions": [
+    { "id": "list_events", "description": "Upcoming events", "mutating": false },
+    { "id": "create_event", "description": "Create an event", "mutating": true }
+  ],
+  "events": [
+    { "id": "event_starting", "description": "An event starts soon" }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "calendar_id": { "type": "string", "title": "Calendar ID", "default": "primary" },
+      "reminder_minutes": { "type": "integer", "title": "Remind before (min)", "default": 10 }
+    }
+  },
+  "health_check": { "type": "credentials" },
+  "docs_url": "https://developers.google.com/calendar/api/v3/reference"
+}

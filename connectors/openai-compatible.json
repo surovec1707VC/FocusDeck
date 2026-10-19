@@ -1,0 +1,21 @@
+{
+  "id": "openai-compatible",
+  "name": "OpenAI-compatible API",
+  "description": "Any server that speaks the OpenAI chat completions protocol (LM Studio, vLLM, OpenRouter, ...). Shares its API key with the AI Assistant.",
+  "category": "ai",
+  "enabled": true,
+  "auth_type": "api_key",
+  "secret_ref": "ai.openai_compatible.api_key",
+  "permissions": ["network:internet"],
+  "actions": [
+    { "id": "chat", "description": "Send a chat completion request", "mutating": false },
+    { "id": "list_models", "description": "List available models", "mutating": false }
+  ],
+  "events": [],
+  "settings_schema": {
+    "type": "object",
+    "properties": {}
+  },
+  "health_check": { "type": "ai_provider", "provider": "openai_compatible" },
+  "docs_url": "https://platform.openai.com/docs/api-reference/chat"
+}
