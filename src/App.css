@@ -89,7 +89,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .status-error { color: var(--err); }
 
 .details { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-.details-head { display: flex; justify-content: space-between; gap: 12px; }
+.details-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .details h2 { margin: 0 0 4px; font-size: 18px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 12px 0; }
 .tab { background: transparent; color: var(--muted); border: none; border-radius: 0; border-bottom: 2px solid transparent; }
@@ -176,3 +176,12 @@ textarea.code { width: 100%; resize: vertical; }
 .issues { border: 1px solid var(--err); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
 .skill-logs { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .skill-logs .run { width: 100%; border-top: 1px solid var(--border); padding-top: 6px; }
+
+/* Connectors */
+.connector-settings { display: flex; flex-direction: column; gap: 16px; }
+.secret-form { display: flex; flex-direction: column; gap: 8px; max-width: 420px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.settings-form textarea {
+  font: inherit; color: var(--text); background: var(--panel);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; resize: vertical;
+}
+.details a { color: var(--accent); }

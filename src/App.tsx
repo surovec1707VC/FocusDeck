@@ -1,15 +1,17 @@
 ﻿import { useState } from "react";
 import AiAssistant from "./pages/AiAssistant";
+import Connectors from "./pages/Connectors";
 import ControlCenter from "./pages/ControlCenter";
 import Modules from "./pages/Modules";
 import Skills from "./pages/Skills";
 import "./App.css";
 
-type Page = "ai" | "skills" | "control-center" | "modules";
+type Page = "ai" | "skills" | "connectors" | "control-center" | "modules";
 
 const NAV: { id: Page; label: string }[] = [
   { id: "ai", label: "AI Assistant" },
   { id: "skills", label: "Skills" },
+  { id: "connectors", label: "Connectors" },
   { id: "control-center", label: "Control Center" },
   { id: "modules", label: "Modules" },
 ];
@@ -37,7 +39,8 @@ function App() {
       <main className="content">
         {page === "ai" && <AiAssistant />}
         {page === "skills" && <Skills />}
-        {page === "control-center" &&<ControlCenter initialSelectedId={openModuleId} />}
+        {page === "connectors" && <Connectors />}
+        {page === "control-center" && <ControlCenter initialSelectedId={openModuleId} />}
         {page === "modules" && (
           <Modules
             onOpen={(id) => {

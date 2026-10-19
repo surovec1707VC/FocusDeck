@@ -4,10 +4,15 @@ import { ModuleInfo, SchemaProperty, Settings, modulesApi } from "../lib/modules
 interface Props {
   module: ModuleInfo;
   onChange: (module: ModuleInfo) => void;
+  /** Override persistence (used by connectors); defaults to the module commands. */
+  save?: (settings: Settings) => Promise<unknown>;
+  reset?: () => Promise<unknown>;
 }
 
-/** Settings form generated from the module's settings_schema. */
-export default function ModuleSettings({ module, onChange }: Props) {
+/** Settings form generated from a settings_schema. */
+export default function ModuleSettings({ module, onChange, save, reset }: Props) {
+  const doSave = save ?? ((s: Settings) => modulesApi.updateSettings(module.id, s).then(onChange));
+  const doReset = reset ?? (() => modulesApi.resetSettings(module.id).then(onChange));
   const [draft, setDraft] = useState<Settings>(module.settings);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -20,11 +25,11 @@ export default function ModuleSettings({ module, onChange }: Props) {
   const properties = Object.entries(module.settings_schema.properties ?? {});
   const dirty = JSON.stringify(draft) !== JSON.stringify(module.settings);
 
-  async function run(action: () => Promise<ModuleInfo>) {
+  async function run(action: () => Promise<unknown>) {
     setSaving(true);
     setError(null);
     try {
-      onChange(await action());
+      await action();
     } catch (e) {
       setError(String(e));
     } finally {
@@ -41,7 +46,7 @@ export default function ModuleSettings({ module, onChange }: Props) {
       className="settings-form"
       onSubmit={(e) => {
         e.preventDefault();
-        run(() => modulesApi.updateSettings(module.id, draft));
+        run(() => doSave(draft));
       }}
     >
       {properties.map(([key, prop]) => (
@@ -65,7 +70,7 @@ export default function ModuleSettings({ module, onChange }: Props) {
           type="button"
           className="secondary"
           disabled={saving}
-          onClick={() => run(() => modulesApi.resetSettings(module.id))}
+          onClick={() => run(doReset)}
         >
           Reset to defaults
         </button>
@@ -108,6 +113,18 @@ function Field({
   }
 
   switch (prop.type) {
+    case "array":
+      return (
+        <label htmlFor={id}>
+          {label} <span className="muted small">(one per line)</span>
+          <textarea
+            id={id}
+            rows={3}
+            value={Array.isArray(value) ? value.join("\n") : ""}
+            onChange={(e) => onChange(e.target.value.split("\n").filter((line) => line.trim() !== ""))}
+          />
+        </label>
+      );
     case "boolean":
       return (
         <label htmlFor={id} className="checkbox">
