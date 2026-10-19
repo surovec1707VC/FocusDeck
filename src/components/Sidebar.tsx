@@ -1,23 +1,27 @@
 import { NavLink } from "react-router-dom";
-import { Blocks, Info, LayoutDashboard, LayoutGrid, Puzzle, Settings, ShieldCheck, Workflow } from "lucide-react";
+import { Blocks, Info, LayoutDashboard, LayoutGrid, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Workflow } from "lucide-react";
 import { t } from "../i18n";
+import { useModules } from "../lib/modules-context";
 
+/** `module`: the page is hidden from the menu while that module is off. */
 const ITEMS = [
-  { to: "/", label: t.nav.dashboard, icon: LayoutDashboard },
-  { to: "/widgets", label: t.nav.widgets, icon: LayoutGrid },
-  { to: "/layouts", label: t.nav.layouts, icon: Blocks },
-  { to: "/automations", label: t.nav.automations, icon: Workflow },
-  { to: "/modules", label: t.nav.modules, icon: Puzzle },
-  { to: "/settings", label: t.nav.settings, icon: Settings },
-  { to: "/permissions", label: t.nav.permissions, icon: ShieldCheck },
+  { to: "/", label: t.nav.dashboard, icon: LayoutDashboard, module: "dashboard" },
+  { to: "/widgets", label: t.nav.widgets, icon: LayoutGrid, module: "widgets" },
+  { to: "/layouts", label: t.nav.layouts, icon: Blocks, module: "layouts" },
+  { to: "/automations", label: t.nav.automations, icon: Workflow, module: "automations" },
+  { to: "/control-center", label: t.nav.controlCenter, icon: SlidersHorizontal },
+  { to: "/modules", label: t.nav.modules, icon: Puzzle, module: "module_registry" },
+  { to: "/settings", label: t.nav.settings, icon: Settings, module: "settings" },
+  { to: "/permissions", label: t.nav.permissions, icon: ShieldCheck, module: "security" },
   { to: "/about", label: t.nav.about, icon: Info },
 ];
 
 /** Icons only below `lg`, icons with labels from `lg` up. */
 export default function Sidebar() {
+  const { isEnabled } = useModules();
   return (
     <nav aria-label="Основная навигация" className="flex w-14 shrink-0 flex-col gap-1 border-r border-zinc-200/70 p-2 lg:w-52 dark:border-zinc-800/70">
-      {ITEMS.map(({ to, label, icon: Icon }) => (
+      {ITEMS.filter((item) => !item.module || isEnabled(item.module)).map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}

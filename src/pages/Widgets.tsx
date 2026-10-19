@@ -1,12 +1,15 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Maximize2, Plus, Trash2 } from "lucide-react";
 import { ClockWidget, NoteWidget, StatusWidget, TasksWidget } from "../components/widgets/WidgetBodies";
 import { Empty, ErrorBanner, Field, PageHeader } from "../components/ui";
 import { t } from "../i18n";
 import { api, errorText, Widget, WidgetKind, WidgetSize } from "../lib/api";
 import { attempt, useAsync } from "../lib/use-async";
+import { useModules } from "../lib/modules-context";
 
 const KINDS: WidgetKind[] = ["clock", "note", "tasks", "status"];
+/** Module that owns each widget kind (mirrors the backend catalog). */
+const OWNER: Record<WidgetKind, string> = { clock: "widget_clock", note: "notes", tasks: "tasks", status: "widget_status" };
 const SIZES: WidgetSize[] = ["sm", "md", "lg"];
 const SPAN: Record<WidgetSize, string> = {
   sm: "col-span-1",
@@ -21,6 +24,22 @@ export default function Widgets() {
   const [kind, setKind] = useState<WidgetKind>("note");
   const [title, setTitle] = useState<string>(t.widgets.kinds.note);
   const W = t.widgets;
+  const { settingsOf, isEnabled, modules } = useModules();
+  const showTitles = settingsOf("widgets").show_titles !== false;
+  // Re-fetch when modules change: widgets of a disabled module are hidden by the backend.
+  const modulesKey = modules?.map((m) => (m.enabled ? "1" : "0")).join("") ?? "";
+  useEffect(() => {
+    widgets.reload();
+  }, [modulesKey]); // widgets.reload is stable for this page
+
+  // Only kinds whose module is on can be added; keep the selection valid.
+  const available = KINDS.filter((k) => isEnabled(OWNER[k]));
+  useEffect(() => {
+    if (available.length > 0 && !available.includes(kind)) {
+      setKind(available[0]);
+      setTitle(W.kinds[available[0]]);
+    }
+  }, [available.join(), kind]);
   const active = layouts.data?.find((l) => l.is_active);
 
   async function switchLayout(id: string) {
@@ -83,7 +102,7 @@ export default function Widgets() {
               setTitle(W.kinds[k]);
             }}
           >
-            {KINDS.map((k) => (
+            {available.map((k) => (
               <option key={k} value={k}>
                 {W.kinds[k]}
               </option>
@@ -93,7 +112,7 @@ export default function Widgets() {
         <Field label={W.name}>
           <input className="input w-56" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        <button className="btn-primary" disabled={!title.trim()}>
+        <button className="btn-primary" disabled={!title.trim() || available.length === 0}>
           <Plus className="size-4" />
           {W.add}
         </button>
@@ -104,7 +123,8 @@ export default function Widgets() {
         {widgets.data?.map((w, i, all) => (
           <article key={w.id} className={`card flex flex-col gap-3 ${SPAN[w.size]}`}>
             <header className="flex items-center gap-1">
-              <h2 className="flex-1 truncate font-semibold">{w.title}</h2>
+              <h2 className={`flex-1 truncate font-semibold ${showTitles ? "" : "sr-only"}`}>{w.title}</h2>
+              {!showTitles && <div className="flex-1" />}
               <button className="btn-ghost px-1.5" disabled={i === 0} onClick={() => act(() => api.widgetsMove(w.id, -1))} aria-label={t.common.moveUp} title={t.common.moveUp}>
                 <ArrowUp className="size-3.5" />
               </button>

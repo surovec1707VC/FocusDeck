@@ -5,6 +5,7 @@ import { Badge, ErrorBanner, PageHeader } from "../components/ui";
 import { formatDateTime, t } from "../i18n";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/use-async";
+import { useModules } from "../lib/modules-context";
 
 function Stat({ to, icon, label, value, hint }: { to: string; icon: ReactNode; label: string; value: ReactNode; hint?: string }) {
   return (
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const names = new Map((automations.data ?? []).map((a) => [a.id, a.name]));
   const s = stats.data;
   const d = t.dashboard;
+  const showRuns = useModules().settingsOf("dashboard").show_recent_runs !== false;
 
   return (
     <>
@@ -60,6 +62,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {showRuns && (
       <section className="card mt-6">
         <h2 className="mb-3 font-semibold">{d.recentRuns}</h2>
         {logs.data && logs.data.length === 0 && <p className="text-zinc-500">{d.noRuns}</p>}
@@ -74,6 +77,7 @@ export default function Dashboard() {
           ))}
         </ul>
       </section>
+      )}
     </>
   );
 }

@@ -80,15 +80,94 @@ export interface PermissionLog {
   created_at: string;
 }
 
+export type ModuleCategory =
+  | "appearance"
+  | "widgets"
+  | "layouts"
+  | "automations"
+  | "productivity"
+  | "developer_tools"
+  | "clipboard"
+  | "files"
+  | "windows_integration"
+  | "notifications"
+  | "privacy_security"
+  | "integrations"
+  | "performance";
+
+export interface SchemaProperty {
+  type?: "boolean" | "integer" | "number" | "string";
+  title?: string;
+  description?: string;
+  default?: unknown;
+  minimum?: number;
+  maximum?: number;
+  enum?: unknown[];
+}
+
+export interface SettingsSchema {
+  type: "object";
+  properties?: Record<string, SchemaProperty>;
+}
+
+export type Settings = Record<string, unknown>;
+
+export interface ModulePermission {
+  id: string;
+  name: string;
+  granted: boolean;
+}
+
 export interface ModuleInfo {
   id: string;
   name: string;
   description: string;
-  category: string;
+  details: string;
+  category: ModuleCategory;
+  version: string;
   enabled: boolean;
-  is_core: boolean;
-  permissions: string[];
+  critical: boolean;
+  requires_restart: boolean;
+  pending_restart: boolean;
+  permissions: ModulePermission[];
   missing_permissions: string[];
+  settings: Settings;
+  settings_schema: SettingsSchema;
+  updated_at: string;
+}
+
+export type HealthState = "ok" | "degraded" | "error" | "disabled";
+
+export interface ModuleStatus {
+  module_id: string;
+  enabled: boolean;
+  state: HealthState;
+  message: string;
+  pending_restart: boolean;
+  checked_at: string;
+}
+
+export interface ModuleLog {
+  id: number;
+  module_id: string;
+  level: "info" | "warn" | "error";
+  action: string;
+  message: string;
+  source: string;
+  created_at: string;
+}
+
+export interface ToggleResult {
+  module: ModuleInfo;
+  warnings: string[];
+}
+
+export interface ImportReport {
+  settings_applied: boolean;
+  modules_applied: number;
+  permissions_applied: number;
+  skipped: string[];
+  warnings: string[];
 }
 
 export interface Layout {
@@ -135,6 +214,7 @@ export interface Automation {
   id: string;
   name: string;
   enabled: boolean;
+  module_id: string;
   trigger: Trigger;
   actions: Action[];
   last_run_at: string | null;
@@ -145,6 +225,8 @@ export interface Automation {
 export interface AutomationInput {
   name: string;
   enabled: boolean;
+  /** Owning module; the automation doesn't run while it is off (default "automations"). */
+  module_id?: string;
   trigger: Trigger;
   actions: Action[];
 }
@@ -176,8 +258,22 @@ export const api = {
   permissionsSet: (id: string, granted: boolean) => call<Permission[]>("permissions_set", { id, granted }),
   permissionsLogs: (limit = 50) => call<PermissionLog[]>("permissions_logs", { limit }),
 
-  modulesList: () => call<ModuleInfo[]>("modules_list"),
-  modulesSetEnabled: (id: string, enabled: boolean) => call<ModuleInfo[]>("modules_set_enabled", { id, enabled }),
+  // Module Registry (see docs/api.md)
+  listModules: () => call<ModuleInfo[]>("list_modules"),
+  getModule: (id: string) => call<ModuleInfo>("get_module", { id }),
+  enableModule: (id: string) => call<ToggleResult>("enable_module", { id }),
+  disableModule: (id: string, confirm = false) => call<ToggleResult>("disable_module", { id, confirm }),
+  updateModuleSettings: (id: string, settings: Settings) => call<ModuleInfo>("update_module_settings", { id, settings }),
+  resetModuleSettings: (id: string) => call<ModuleInfo>("reset_module_settings", { id }),
+  getModuleStatus: (id: string) => call<ModuleStatus>("get_module_status", { id }),
+  getModuleLogs: (id: string, limit = 100) => call<ModuleLog[]>("get_module_logs", { id, limit }),
+  getModulePermissions: (id: string) => call<ModulePermission[]>("get_module_permissions", { id }),
+
+  // Configuration export / import
+  exportConfig: () => call<string>("export_config"),
+  importConfig: (json: string, confirm = false) => call<ImportReport>("import_config", { json, confirm }),
+  exportConfigToFile: () => call<string | null>("export_config_to_file"),
+  readConfigFile: () => call<string | null>("read_config_file"),
 
   layoutsList: () => call<Layout[]>("layouts_list"),
   layoutsCreate: (name: string) => call<Layout[]>("layouts_create", { name }),
@@ -209,4 +305,6 @@ export const api = {
 export const EVENTS = {
   notify: "focusdeck://notify",
   navigate: "focusdeck://navigate",
+  modulesChanged: "focusdeck://modules-changed",
+  settingsChanged: "focusdeck://settings-changed",
 } as const;

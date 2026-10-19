@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import App from "./App";
+import { ModulesProvider } from "./lib/modules-context";
 import { SettingsProvider } from "./lib/settings-context";
 import { applyTheme, cachedTheme } from "./lib/theme";
 import "./index.css";
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <HashRouter>
       <SettingsProvider>
-        <App />
+        <ModulesProvider>
+          <App />
+        </ModulesProvider>
       </SettingsProvider>
     </HashRouter>
   </React.StrictMode>,

@@ -1,25 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Bell, X } from "lucide-react";
 import { EVENTS, Notification } from "../lib/api";
 import { t } from "../i18n";
+import { useModules } from "../lib/modules-context";
 
 interface Toast extends Notification {
   id: number;
 }
 
-const LIFETIME_MS = 6000;
-
 /** Shows notifications sent by automations (`focusdeck://notify`). */
 export default function Toasts() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // Duration and limit come from the Notifications module (read via ref: the listener is set up once).
+  const { settingsOf } = useModules();
+  const config = useRef({ duration: 6000, max: 4 });
+  const s = settingsOf("notifications");
+  config.current = { duration: Number(s.duration_ms ?? 6000), max: Number(s.max_visible ?? 4) };
 
   useEffect(() => {
     let next = 0;
     const unlisten = listen<Notification>(EVENTS.notify, (e) => {
       const toast = { ...e.payload, id: next++ };
-      setToasts((list) => [...list.slice(-3), toast]);
-      setTimeout(() => setToasts((list) => list.filter((x) => x.id !== toast.id)), LIFETIME_MS);
+      const { duration, max } = config.current;
+      setToasts((list) => [...list, toast].slice(-max));
+      setTimeout(() => setToasts((list) => list.filter((x) => x.id !== toast.id)), duration);
     });
     return () => {
       unlisten.then((f) => f());

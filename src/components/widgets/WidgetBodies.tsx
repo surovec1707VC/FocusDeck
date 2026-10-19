@@ -3,8 +3,11 @@ import { Trash2 } from "lucide-react";
 import { locale, t } from "../../i18n";
 import { api, Widget } from "../../lib/api";
 import { attempt, useAsync } from "../../lib/use-async";
+import { useModules } from "../../lib/modules-context";
 
 export function ClockWidget() {
+  const { settingsOf } = useModules();
+  const { show_seconds = true, show_date = true } = settingsOf("widget_clock");
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -13,11 +16,13 @@ export function ClockWidget() {
   return (
     <div>
       <div className="text-4xl font-semibold tabular-nums">
-        {now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+        {now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", ...(show_seconds ? { second: "2-digit" } : {}) })}
       </div>
-      <div className="mt-1 text-zinc-500 first-letter:uppercase">
-        {now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
-      </div>
+      {Boolean(show_date) && (
+        <div className="mt-1 text-zinc-500 first-letter:uppercase">
+          {now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
+        </div>
+      )}
     </div>
   );
 }
@@ -39,6 +44,7 @@ export function NoteWidget({ widget, onError }: { widget: Widget; onError: (m: s
 }
 
 export function TasksWidget({ onError }: { onError: (m: string | null) => void }) {
+  const hideCompleted = Boolean(useModules().settingsOf("tasks").hide_completed);
   const { data, setData } = useAsync(api.tasksList);
   const [title, setTitle] = useState("");
 
@@ -69,7 +75,7 @@ export function TasksWidget({ onError }: { onError: (m: string | null) => void }
       </form>
       {data?.length === 0 && <p className="text-zinc-500">{t.widgets.noTasks}</p>}
       <ul className="flex max-h-60 flex-col gap-1 overflow-y-auto">
-        {data?.map((task) => (
+        {data?.filter((task) => !(hideCompleted && task.done)).map((task) => (
           <li key={task.id} className="group flex items-center gap-2 rounded-md px-1 py-0.5 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60">
             <input
               type="checkbox"

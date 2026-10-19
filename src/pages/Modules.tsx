@@ -1,56 +1,65 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldAlert } from "lucide-react";
+import { Settings2, ShieldAlert } from "lucide-react";
 import { Badge, ErrorBanner, PageHeader, Toggle } from "../components/ui";
 import { t } from "../i18n";
-import { api, ModuleInfo } from "../lib/api";
-import { attempt, useAsync } from "../lib/use-async";
+import { useModules } from "../lib/modules-context";
+import { useModuleToggle } from "../lib/use-module-toggle";
 
+/** Compact list of all modules with quick toggles. */
 export default function Modules() {
-  const { data, setData, error, setError } = useAsync(api.modulesList);
-  const perms = useAsync(api.permissionsList);
-  const permName = new Map((perms.data ?? []).map((p) => [p.id, p.name]));
+  const { modules, reload } = useModules();
+  const [error, setError] = useState<string | null>(null);
+  const { toggle, dialog } = useModuleToggle(() => reload(), setError);
   const M = t.modules;
-
-  const groups = new Map<string, ModuleInfo[]>();
-  for (const m of data ?? []) groups.set(m.category, [...(groups.get(m.category) ?? []), m]);
-
-  async function toggle(m: ModuleInfo) {
-    const result = await attempt(() => api.modulesSetEnabled(m.id, !m.enabled), setError);
-    if (result) setData(result);
-  }
+  const on = modules?.filter((m) => m.enabled).length ?? 0;
 
   return (
     <>
-      <PageHeader title={M.title} subtitle={M.subtitle} />
+      <PageHeader title={M.title} subtitle={M.subtitle} actions={modules && <Badge>{M.enabledCount(on, modules.length)}</Badge>} />
       <ErrorBanner message={error} onClose={() => setError(null)} />
-      <div className="flex flex-col gap-6">
-        {[...groups].map(([category, modules]) => (
-          <section key={category}>
-            <h2 className="mb-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">{category}</h2>
-            <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              {modules.map((m) => (
-                <li key={m.id} className="card flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="flex-1 truncate font-semibold">{m.name}</h3>
-                    {m.is_core && <Badge>{M.core}</Badge>}
-                    <Toggle checked={m.enabled} disabled={m.is_core} onChange={() => toggle(m)} label={m.name} />
+      <div className="card overflow-x-auto p-0">
+        <table className="w-full text-left">
+          <thead className="text-xs text-zinc-500">
+            <tr className="border-b border-zinc-200 dark:border-zinc-800">
+              <th className="px-4 py-2 font-medium">{M.colModule}</th>
+              <th className="hidden px-2 py-2 font-medium md:table-cell">{M.colCategory}</th>
+              <th className="hidden px-2 py-2 font-medium sm:table-cell">{M.version}</th>
+              <th className="px-2 py-2 font-medium">
+                <span className="sr-only">{M.colEnabled}</span>
+              </th>
+              <th className="px-2 py-2">
+                <span className="sr-only">{M.configure}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {modules?.map((m) => (
+              <tr key={m.id} className={m.enabled ? "" : "text-zinc-500"}>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium">{m.name}</span>
+                    {m.critical && <ShieldAlert className="size-3.5 text-amber-500" aria-label={M.critical} />}
+                    {m.pending_restart && <Badge tone="warn">{M.restart}</Badge>}
                   </div>
-                  <p className="text-zinc-600 dark:text-zinc-400">{m.description}</p>
-                  {m.enabled && m.missing_permissions.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
-                      <ShieldAlert className="size-4" />
-                      {M.missingPermissions} {m.missing_permissions.map((p) => permName.get(p) ?? p).join(", ")}
-                      <Link to="/permissions" className="underline">
-                        {M.openPermissions}
-                      </Link>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+                  <div className="text-xs text-zinc-500">{m.description}</div>
+                </td>
+                <td className="hidden px-2 py-2 text-xs md:table-cell">{t.categories[m.category]}</td>
+                <td className="hidden px-2 py-2 text-xs sm:table-cell">{m.version}</td>
+                <td className="px-2 py-2">
+                  <Toggle checked={m.enabled} onChange={() => toggle(m)} label={m.name} />
+                </td>
+                <td className="px-2 py-2 text-right">
+                  <Link to={`/control-center?module=${m.id}`} className="btn-ghost px-2" title={M.configure} aria-label={`${M.configure}: ${m.name}`}>
+                    <Settings2 className="size-4" />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      {dialog}
     </>
   );
 }

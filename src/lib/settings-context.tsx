@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
-import { api, AppSettings } from "./api";
+import { listen } from "@tauri-apps/api/event";
+import { api, AppSettings, EVENTS } from "./api";
 import { applyTheme } from "./theme";
 
 interface SettingsContextValue {
@@ -21,6 +22,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     reload();
+    // Settings can change outside this page (configuration import).
+    const unlisten = listen(EVENTS.settingsChanged, () => reload());
+    return () => {
+      unlisten.then((f) => f());
+    };
   }, [reload]);
 
   const save = useCallback(async (next: AppSettings) => {
