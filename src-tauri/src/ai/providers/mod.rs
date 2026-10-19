@@ -1,6 +1,5 @@
-//! Provider abstraction shared by Ollama, OpenAI-compatible and Anthropic.
+//! Provider abstraction shared by Ollama and OpenAI-compatible endpoints.
 
-pub mod anthropic;
 pub mod ollama;
 pub mod openai_compatible;
 
@@ -15,7 +14,6 @@ use serde::{Deserialize, Serialize};
 pub enum ProviderKind {
     Ollama,
     OpenaiCompatible,
-    Anthropic,
 }
 
 impl ProviderKind {
@@ -23,7 +21,6 @@ impl ProviderKind {
         match self {
             Self::Ollama => "ollama",
             Self::OpenaiCompatible => "openai_compatible",
-            Self::Anthropic => "anthropic",
         }
     }
 }
@@ -47,8 +44,6 @@ pub struct ChatRequest {
     pub system: Option<String>,
     pub messages: Vec<ChatMessage>,
     pub max_tokens: u32,
-    /// Anthropic `output_config.effort`; ignored by other providers.
-    pub effort: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -80,8 +75,6 @@ pub enum AiError {
         status: u16,
         body: String,
     },
-    #[error("API key for {0} is not set")]
-    MissingApiKey(&'static str),
     #[error("{0}")]
     Config(String),
     #[error("unexpected response: {0}")]
@@ -201,7 +194,6 @@ mod tests {
             system: Some("sys".into()),
             messages: vec![ChatMessage { role: Role::User, content: "hi".into() }],
             max_tokens: 100,
-            effort: None,
         }
     }
 
@@ -234,24 +226,5 @@ mod tests {
         let r = p.chat(&request()).await.unwrap();
         assert_eq!(r.content, "Hi there");
         assert_eq!(r.stop_reason.as_deref(), Some("stop"));
-    }
-
-    #[tokio::test]
-    async fn anthropic_sse_event_parsing() {
-        // Exercises the same SSE parsing as AnthropicProvider via a test-only base URL.
-        let url = mock_server(
-            "text/event-stream",
-            "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{}}\n\n\
-             event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"x\"}}\n\n\
-             event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"Bon\"}}\n\n\
-             event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"jour\"}}\n\n\
-             event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n\
-             event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
-        )
-        .await;
-        let p = anthropic::AnthropicProvider::with_base_url(reqwest::Client::new(), "k".into(), url);
-        let r = p.chat(&request()).await.unwrap();
-        assert_eq!(r.content, "Bonjour");
-        assert_eq!(r.stop_reason.as_deref(), Some("end_turn"));
     }
 }

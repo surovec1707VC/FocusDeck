@@ -80,7 +80,7 @@ FocusDeck **ничего не скачивает и не устанавлива�
 | Sample rate | 16000 Hz | Whisper работает на 16 kHz |
 | Language | `ru` | код языка или `auto` |
 | Wake word | пусто | пока не используется; пусто — только push-to-talk |
-| Push-to-talk hotkey | `Ctrl+Alt+M` | формат вида `Ctrl+Shift+V`. Если сочетание занято другой программой (например, `Ctrl+Alt+Space` занят быстрым вызовом Claude Desktop), будет ошибка и настройки не сохранятся |
+| Push-to-talk hotkey | `Ctrl+Alt+M` | формат вида `Ctrl+Shift+V`. Если сочетание занято другой программой (например, `Ctrl+Alt+Space` на этом ПК занят), будет ошибка и настройки не сохранятся |
 | STT provider | whisper.cpp | |
 | TTS provider | Windows TTS | |
 | Auto-send to AI | выкл | нераспознанные локально команды отправлять ассистенту, а не скиллу `voice-intent-router` |

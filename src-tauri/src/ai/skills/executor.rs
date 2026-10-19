@@ -101,7 +101,6 @@ pub async fn run(
     provider: &dyn AiProvider,
     model: String,
     max_tokens: u32,
-    effort: Option<String>,
     skill: &SkillManifest,
     input: &Value,
 ) -> Result<SkillRunOutcome, ExecError> {
@@ -121,7 +120,6 @@ pub async fn run(
             ),
         }],
         max_tokens,
-        effort,
     };
     let reply = provider.chat(&request).await?;
     if reply.stop_reason.as_deref() == Some("refusal") {
@@ -234,7 +232,7 @@ mod tests {
            {"tool": "shell.run", "args": {}, "reason": "extra"}
          ]}
         ```"#;
-        let out = run(&FakeProvider(reply), "m".into(), 100, None, &skill(), &json!({ "goal": "g" }))
+        let out = run(&FakeProvider(reply), "m".into(), 100, &skill(), &json!({ "goal": "g" }))
             .await
             .unwrap();
         assert_eq!(out.summary, "Two tasks");
@@ -248,7 +246,7 @@ mod tests {
     #[tokio::test]
     async fn blocks_tools_outside_allow_list() {
         let reply = r#"{"summary": "", "result": {"tasks": []}, "plan": [{"tool": "shell.run", "args": {}}]}"#;
-        let out = run(&FakeProvider(reply), "m".into(), 100, None, &skill(), &json!({ "goal": "g" }))
+        let out = run(&FakeProvider(reply), "m".into(), 100, &skill(), &json!({ "goal": "g" }))
             .await
             .unwrap();
         assert!(matches!(out.plan[0].status, StepStatus::Blocked { .. }));
@@ -257,12 +255,12 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_invalid_input_and_bad_reply() {
-        let err = run(&FakeProvider("{}"), "m".into(), 100, None, &skill(), &json!({}))
+        let err = run(&FakeProvider("{}"), "m".into(), 100, &skill(), &json!({}))
             .await
             .unwrap_err();
         assert!(matches!(err, ExecError::InvalidInput(_)));
 
-        let err = run(&FakeProvider("no json here"), "m".into(), 100, None, &skill(), &json!({ "goal": "g" }))
+        let err = run(&FakeProvider("no json here"), "m".into(), 100, &skill(), &json!({ "goal": "g" }))
             .await
             .unwrap_err();
         assert!(matches!(err, ExecError::BadReply(_)));

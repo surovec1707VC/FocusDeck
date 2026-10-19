@@ -19,12 +19,11 @@
 
 Неизвестные поля запрещены.
 
-## Коннекторы (16)
+## Коннекторы (15)
 | id | auth | health check | по умолчанию |
 |---|---|---|---|
 | ollama | local | GET `{base_url}/api/version` | вкл |
 | openai-compatible | none (ключи — у endpoint-ов в AI Assistant) | ai_provider (активный endpoint) | вкл |
-| anthropic | api_key (общий с AI Assistant) | ai_provider | вкл |
 | git | local | `git` в PATH | выкл |
 | github | api_key (PAT) | credentials | выкл |
 | vscode | local | `code` в PATH | выкл |
@@ -48,7 +47,7 @@
 - `mod.rs` — команды: `connectors_list`, `connectors_issues`, `connectors_reload`, `connectors_set_enabled`, `connectors_update_settings`, `connectors_reset_settings`, `connectors_set_secret`, `connectors_delete_secret`, `connectors_test`, `connectors_logs`.
 - `connectors/*.json` входят в бандл через `bundle.resources`.
 
-Ограничение: выключение коннекторов ollama / anthropic / openai-compatible пока не блокирует AI Router. Связать их — отдельная задача.
+Ограничение: выключение коннекторов ollama / openai-compatible пока не блокирует AI Router. Связать их — отдельная задача.
 
 ## Frontend
 - `src/pages/Connectors.tsx` — список, поиск, фильтр по категории, вкл/выкл, перезагрузка манифестов.

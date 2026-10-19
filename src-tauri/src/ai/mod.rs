@@ -195,7 +195,6 @@ pub async fn ai_chat_stream(
         system: Some(profile.system_prompt.to_string()),
         messages: session::to_chat_messages(&history),
         max_tokens: profile.max_tokens,
-        effort: profile.effort.map(str::to_string),
     };
 
     let mut reply = String::new();

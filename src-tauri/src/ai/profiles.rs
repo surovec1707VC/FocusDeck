@@ -1,8 +1,8 @@
-﻿//! AI Profiles: named presets of provider, model, system prompt and effort.
+﻿//! AI Profiles: named presets of provider, model and system prompt.
 
 use serde::Serialize;
 
-use super::providers::{anthropic, ProviderKind};
+use super::providers::ProviderKind;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AiProfile {
@@ -12,11 +12,10 @@ pub struct AiProfile {
     pub provider: ProviderKind,
     /// Keeps its own provider even when a default provider is set (privacy).
     pub pinned_provider: bool,
+    /// Empty = the provider's default model (e.g. the active endpoint's).
     pub model: &'static str,
     pub system_prompt: &'static str,
     pub max_tokens: u32,
-    /// Anthropic effort level; other providers ignore it.
-    pub effort: Option<&'static str>,
 }
 
 // Streaming requests get a generous max_tokens so long answers aren't cut off.
@@ -28,65 +27,60 @@ pub fn all() -> Vec<AiProfile> {
             id: "fast_assistant",
             name: "Fast Assistant",
             description: "Short, direct answers for everyday questions.",
-            provider: ProviderKind::Anthropic,
+            provider: ProviderKind::OpenaiCompatible,
             pinned_provider: false,
-            model: anthropic::DEFAULT_MODEL,
+            model: "",
             system_prompt: "You are FocusDeck's assistant. Answer briefly and directly. \
                             Use lists only when they make the answer easier to scan.",
             max_tokens: MAX_TOKENS,
-            effort: Some("low"),
         },
         AiProfile {
             id: "coding_assistant",
             name: "Coding Assistant",
             description: "Writes and explains code; careful about correctness.",
-            provider: ProviderKind::Anthropic,
+            provider: ProviderKind::OpenaiCompatible,
             pinned_provider: false,
-            model: anthropic::DEFAULT_MODEL,
+            model: "",
             system_prompt: "You are a senior software engineer. Give working code that matches \
                             the user's language and style, explain non-obvious decisions, and \
                             point out risks or edge cases you notice.",
             max_tokens: MAX_TOKENS,
-            effort: Some("high"),
         },
         AiProfile {
             id: "prompt_improver",
             name: "Prompt Improver",
             description: "Rewrites a prompt to be clearer and more specific.",
-            provider: ProviderKind::Anthropic,
+            provider: ProviderKind::OpenaiCompatible,
             pinned_provider: false,
-            model: anthropic::DEFAULT_MODEL,
+            model: "",
             system_prompt: "Rewrite the user's prompt so another AI model can act on it: state \
                             the goal, context, constraints and the expected output format. \
                             Return the improved prompt, then a short list of what you changed.",
             max_tokens: MAX_TOKENS,
-            effort: Some("medium"),
         },
         AiProfile {
             id: "error_explainer",
             name: "Error Explainer",
             description: "Explains an error message or stack trace and how to fix it.",
-            provider: ProviderKind::Anthropic,
+            provider: ProviderKind::OpenaiCompatible,
             pinned_provider: false,
-            model: anthropic::DEFAULT_MODEL,
+            model: "",
             system_prompt: "The user pastes an error, log or stack trace. Explain the most likely \
                             cause in plain language, then give concrete fix steps. If the input \
                             is not enough to be sure, say what extra information would help.",
             max_tokens: MAX_TOKENS,
-            effort: Some("medium"),
         },
         AiProfile {
             id: "task_planner",
             name: "Task Planner",
             description: "Breaks a goal into ordered, actionable steps.",
-            provider: ProviderKind::Anthropic,
+            provider: ProviderKind::OpenaiCompatible,
             pinned_provider: false,
-            model: anthropic::DEFAULT_MODEL,
+            model: "",
             system_prompt: "Turn the user's goal into a plan of small, ordered, verifiable steps. \
                             Note dependencies and open questions. Do not perform any actions \
                             yourself; only produce the plan.",
             max_tokens: MAX_TOKENS,
-            effort: Some("high"),
         },
         AiProfile {
             id: "local_private_assistant",
@@ -97,7 +91,6 @@ pub fn all() -> Vec<AiProfile> {
             model: "llama3.2",
             system_prompt: "You are a helpful assistant running locally. Answer concisely.",
             max_tokens: 4_096,
-            effort: None,
         },
     ]
 }

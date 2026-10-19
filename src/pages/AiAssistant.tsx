@@ -5,7 +5,7 @@ import ModelSelector from "../components/ai/ModelSelector";
 import ProfileSelector from "../components/ai/ProfileSelector";
 import ProviderSettings from "../components/ai/ProviderSettings";
 import SessionHistory from "../components/ai/SessionHistory";
-import { AiProfile, AiSession, ProviderKind, aiApi } from "../lib/ai";
+import { AiProfile, AiSession, PROVIDER_LABELS, ProviderKind, aiApi } from "../lib/ai";
 
 const STOP_NOTICES: Record<string, string> = {
   max_tokens: "The reply hit the length limit and was cut off.",
@@ -16,7 +16,7 @@ const STOP_NOTICES: Record<string, string> = {
 export default function AiAssistant() {
   const [profiles, setProfiles] = useState<AiProfile[]>([]);
   const [profileId, setProfileId] = useState("fast_assistant");
-  const [provider, setProvider] = useState<ProviderKind>("anthropic");
+  const [provider, setProvider] = useState<ProviderKind>("openai_compatible");
   const [model, setModel] = useState("");
   const [sessions, setSessions] = useState<AiSession[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -64,8 +64,11 @@ export default function AiAssistant() {
     const profile = profiles.find((p) => p.id === session?.profile_id);
     if (session && profile) {
       setProfileId(profile.id);
-      setProvider(session.provider as ProviderKind);
-      setModel(session.model);
+      // Chats started with a provider that no longer exists continue on the current one.
+      if (session.provider in PROVIDER_LABELS) {
+        setProvider(session.provider as ProviderKind);
+        setModel(session.model);
+      }
     }
   }
 

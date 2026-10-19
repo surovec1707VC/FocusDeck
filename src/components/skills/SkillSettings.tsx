@@ -88,7 +88,7 @@ function TestRun({ skill }: { skill: SkillInfo }) {
   const m = skill.manifest;
   const [input, setInput] = useState(() => JSON.stringify(sampleInput(m.input_schema), null, 2));
   const [resolved, setResolved] = useState<ResolvedTarget | null>(null);
-  const [provider, setProvider] = useState<ProviderKind>("anthropic");
+  const [provider, setProvider] = useState<ProviderKind>("openai_compatible");
   const [model, setModel] = useState("");
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<SkillRunOutcome | null>(null);

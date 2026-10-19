@@ -93,19 +93,13 @@ export default function ProviderSettings({ onConfigChanged }: { onConfigChanged?
             value={config.default_provider ?? ""}
             onChange={(e) => save({ ...config, default_provider: (e.target.value || null) as ProviderKind | null })}
           >
-            <option value="">Each profile's own (Anthropic)</option>
-            <option value="anthropic">{PROVIDER_LABELS.anthropic}</option>
+            <option value="">Each profile's own (OpenAI-compatible: {active?.name ?? "no endpoint"})</option>
             <option value="openai_compatible" disabled={config.openai_endpoints.length === 0}>
               OpenAI-compatible: {active?.name ?? "no endpoint"}
             </option>
             <option value="ollama">{PROVIDER_LABELS.ollama}</option>
           </select>
         </label>
-      </section>
-
-      <section>
-        <h3>{PROVIDER_LABELS.anthropic}</h3>
-        <KeyRow provider="anthropic" />
       </section>
 
       <section>

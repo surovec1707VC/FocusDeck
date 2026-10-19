@@ -1,11 +1,10 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 
-export type ProviderKind = "ollama" | "openai_compatible" | "anthropic";
+export type ProviderKind = "ollama" | "openai_compatible";
 
 export const PROVIDER_LABELS: Record<ProviderKind, string> = {
   ollama: "Ollama (local)",
   openai_compatible: "OpenAI-compatible",
-  anthropic: "Anthropic",
 };
 
 export interface AiProfile {

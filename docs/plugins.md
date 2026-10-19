@@ -8,7 +8,7 @@ Permissions: `src-tauri/capabilities/default.json` и `desktop.json` (тольк
 |---|---|---|---|---|
 | shell | 2.5.0 | запуск процессов/sidecar | `shell:default` | installed |
 | fs | 2.7.1 | файловая система | `fs:default` | installed |
-| http | 2.8.3 | HTTP-клиент из фронтенда | `http:default` + scope: localhost:11434, api.anthropic.com, api.openai.com | installed |
+| http | 2.8.3 | HTTP-клиент из фронтенда | `http:default` + scope: localhost:11434, api.openai.com | installed |
 | clipboard-manager | 2.5.0 | буфер обмена | `clipboard-manager:default`, `allow-read-text`, `allow-write-text` | installed |
 | global-shortcut | 2.4.1 | глобальные хоткеи (push-to-talk и т.п.) | `global-shortcut:default` (desktop.json) | installed |
 | notification | 2.7.0 | системные уведомления | `notification:default` | installed |

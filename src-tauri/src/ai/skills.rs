@@ -188,7 +188,6 @@ impl SkillRegistry {
                     provider.as_ref(),
                     model,
                     profile.max_tokens,
-                    profile.effort.map(str::to_string),
                     &manifest,
                     &input,
                 )

@@ -1,4 +1,4 @@
-﻿//! Loading and validating `connectors/*.json`.
+//! Loading and validating `connectors/*.json`.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -140,7 +140,7 @@ mod tests {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../connectors");
         let (loaded, issues) = load_dir(&dir);
         assert!(issues.is_empty(), "{issues:?}");
-        assert_eq!(loaded.len(), 16);
+        assert_eq!(loaded.len(), 15);
     }
 
     #[test]

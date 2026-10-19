@@ -30,9 +30,9 @@ shell, fs, http, clipboard-manager, global-shortcut, notification, dialog, windo
 3. В FocusDeck: **AI Assistant** → профиль **Local Private Assistant** (или провайдер *Ollama (local)*). Адрес сервера и «Test connection» — в блоке **Providers & API keys**, по умолчанию `http://localhost:11434`.
 
 ### Как добавить API key
-**AI Assistant** → **Providers & API keys** → вставьте ключ Anthropic или ключ нужного OpenAI-compatible endpoint → **Save key** → **Test connection**. Ключи коннекторов (GitHub, Telegram, Notion…) задаются так же: **Connectors** → коннектор → **Settings**.
+**AI Assistant** → **Providers & API keys** → вставьте ключ нужного OpenAI-compatible endpoint → **Save key** → **Test connection**. Ключи коннекторов (GitHub, Telegram, Notion…) задаются так же: **Connectors** → коннектор → **Settings**.
 
-Ключи хранятся в Windows Credential Manager (сервис `com.focusdeck.app`), не в файлах и не в SQLite, и не возвращаются в интерфейс. Ключ Anthropic общий для AI Assistant и коннектора Anthropic.
+Ключи хранятся в Windows Credential Manager (сервис `com.focusdeck.app`), не в файлах и не в SQLite, и не возвращаются в интерфейс.
 
 ### Бесплатные и другие AI-сервисы
 1. **Providers & API keys** → **Add endpoint** → выберите сервис (Google Gemini, Groq, OpenRouter, Mistral, OpenAI, LM Studio) или Custom URL.

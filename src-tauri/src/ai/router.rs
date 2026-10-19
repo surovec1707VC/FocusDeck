@@ -10,13 +10,12 @@ use sqlx::SqlitePool;
 
 use super::profiles::AiProfile;
 use super::providers::{
-    anthropic, anthropic::AnthropicProvider, ollama, ollama::OllamaProvider, openai_compatible,
-    openai_compatible::OpenAiCompatibleProvider, AiError, AiProvider, ProviderKind,
+    ollama, ollama::OllamaProvider, openai_compatible, openai_compatible::OpenAiCompatibleProvider,
+    AiError, AiProvider, ProviderKind,
 };
 use crate::secrets::SecretStore;
 
 const CONFIG_KEY: &str = "ai.router";
-const ANTHROPIC_KEY: &str = "ai.anthropic.api_key";
 /// Key of the original single OpenAI-compatible endpoint; kept so keys saved
 /// before multi-endpoint support keep working for the `default` endpoint.
 const LEGACY_OPENAI_KEY: &str = "ai.openai_compatible.api_key";
@@ -42,12 +41,19 @@ pub struct RouterConfig {
     pub active_openai_endpoint: String,
     /// When set, profiles use this provider instead of their own
     /// (except profiles pinned to a provider, like the local private one).
+    /// Unknown values (e.g. a removed provider) read as `None`.
+    #[serde(deserialize_with = "lenient_provider")]
     pub default_provider: Option<ProviderKind>,
     // Pre-multi-endpoint fields, read once and migrated.
     #[serde(skip_serializing)]
     openai_base_url: Option<String>,
     #[serde(skip_serializing)]
     openai_default_model: Option<String>,
+}
+
+fn lenient_provider<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<ProviderKind>, D::Error> {
+    let raw = Option::<serde_json::Value>::deserialize(d)?;
+    Ok(raw.and_then(|v| serde_json::from_value(v).ok()))
 }
 
 impl Default for RouterConfig {
@@ -158,11 +164,12 @@ pub fn resolve_target(
     if let Some(m) = model.map(|m| m.trim().to_string()).filter(|m| !m.is_empty()) {
         return Ok((kind, m));
     }
-    let model = if kind == profile.provider {
+    // A profile's own model applies only to its own provider; otherwise (or when
+    // the profile leaves it empty) the provider's default model is used.
+    let model = if kind == profile.provider && !profile.model.is_empty() {
         profile.model.to_string()
     } else {
         match kind {
-            ProviderKind::Anthropic => anthropic::DEFAULT_MODEL.to_string(),
             ProviderKind::Ollama => config.ollama_default_model.clone(),
             ProviderKind::OpenaiCompatible => config.endpoint(None)?.default_model.clone(),
         }
@@ -240,7 +247,6 @@ impl AiRouter {
     pub fn secret_key(&self, kind: ProviderKind, endpoint_id: Option<&str>) -> Result<Option<String>, AiError> {
         Ok(match kind {
             ProviderKind::Ollama => None,
-            ProviderKind::Anthropic => Some(ANTHROPIC_KEY.to_string()),
             ProviderKind::OpenaiCompatible => Some(endpoint_secret_key(&self.config().endpoint(endpoint_id)?.id)),
         })
     }
@@ -270,10 +276,6 @@ impl AiRouter {
                 self.http.clone(),
                 config.endpoint(endpoint_id)?.base_url.clone(),
                 api_key,
-            )),
-            ProviderKind::Anthropic => Box::new(AnthropicProvider::new(
-                self.http.clone(),
-                api_key.ok_or(AiError::MissingApiKey("anthropic"))?,
             )),
         })
     }
@@ -319,6 +321,14 @@ mod tests {
     }
 
     #[test]
+    fn removed_provider_in_saved_config_is_ignored() {
+        let saved = r#"{"default_provider":"anthropic","ollama_default_model":"qwen"}"#;
+        let cfg: RouterConfig = serde_json::from_str(saved).unwrap();
+        assert_eq!(cfg.default_provider, None);
+        assert_eq!(cfg.ollama_default_model, "qwen");
+    }
+
+    #[test]
     fn secret_keys_keep_legacy_default() {
         assert_eq!(endpoint_secret_key("default"), "ai.openai_compatible.api_key");
         assert_eq!(endpoint_secret_key("groq"), "ai.openai_compatible.groq.api_key");
@@ -332,16 +342,18 @@ mod tests {
         cfg.openai_endpoints.push(endpoint("groq", "llama-free"));
         cfg.active_openai_endpoint = "groq".into();
 
-        // No default provider: the profile's own choice.
-        assert_eq!(resolve_target(&cfg, &fast, None, None).unwrap(), (ProviderKind::Anthropic, fast.model.to_string()));
-
-        // Default provider applies to normal profiles, with the endpoint's model…
-        cfg.default_provider = Some(ProviderKind::OpenaiCompatible);
+        // No default provider: profiles use the active endpoint and its default model.
         assert_eq!(
             resolve_target(&cfg, &fast, None, None).unwrap(),
             (ProviderKind::OpenaiCompatible, "llama-free".into())
         );
-        // …but not to the pinned local profile.
+        assert_eq!(resolve_target(&cfg, &local, None, None).unwrap(), (ProviderKind::Ollama, "llama3.2".into()));
+
+        // Default provider applies to normal profiles…
+        cfg.default_provider = Some(ProviderKind::Ollama);
+        assert_eq!(resolve_target(&cfg, &fast, None, None).unwrap(), (ProviderKind::Ollama, "llama3.2".into()));
+        // …and the pinned local profile stays on Ollama regardless.
+        cfg.default_provider = Some(ProviderKind::OpenaiCompatible);
         assert_eq!(resolve_target(&cfg, &local, None, None).unwrap().0, ProviderKind::Ollama);
 
         // Explicit choices win.

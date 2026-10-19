@@ -51,7 +51,7 @@ pub fn builtin_modules() -> Vec<Arc<dyn Module>> {
         placeholder(
             "ai_router",
             "AI Router",
-            "Routes chat requests to Ollama, OpenAI-compatible or Anthropic providers.",
+            "Routes chat requests to Ollama or OpenAI-compatible endpoints.",
             ModuleCategory::Ai,
             true,
             vec!["http:ai-providers", "secrets:read"],
