@@ -30,9 +30,16 @@ shell, fs, http, clipboard-manager, global-shortcut, notification, dialog, windo
 3. В FocusDeck: **AI Assistant** → профиль **Local Private Assistant** (или провайдер *Ollama (local)*). Адрес сервера и «Test connection» — в блоке **Providers & API keys**, по умолчанию `http://localhost:11434`.
 
 ### Как добавить API key
-**AI Assistant** → **Providers & API keys** → вставьте ключ Anthropic или OpenAI-compatible → **Save key** → **Test connection**. Ключи коннекторов (GitHub, Telegram, Notion…) задаются так же: **Connectors** → коннектор → **Settings**.
+**AI Assistant** → **Providers & API keys** → вставьте ключ Anthropic или ключ нужного OpenAI-compatible endpoint → **Save key** → **Test connection**. Ключи коннекторов (GitHub, Telegram, Notion…) задаются так же: **Connectors** → коннектор → **Settings**.
 
-Ключи хранятся в Windows Credential Manager (сервис `com.focusdeck.app`), не в файлах и не в SQLite, и не возвращаются в интерфейс. Ключи Anthropic и OpenAI-compatible общие для AI Assistant и одноимённых коннекторов.
+Ключи хранятся в Windows Credential Manager (сервис `com.focusdeck.app`), не в файлах и не в SQLite, и не возвращаются в интерфейс. Ключ Anthropic общий для AI Assistant и коннектора Anthropic.
+
+### Бесплатные и другие AI-сервисы
+1. **Providers & API keys** → **Add endpoint** → выберите сервис (Google Gemini, Groq, OpenRouter, Mistral, OpenAI, LM Studio) или Custom URL.
+2. Вставьте ключ сервиса (ссылка «get a key» рядом с полем) → **Save key** → **Load models** → выберите **Default model**.
+3. Отметьте endpoint как активный (радиокнопка) и в **Default provider** выберите «OpenAI-compatible: …». Все профили, кроме Local Private Assistant, будут работать через него.
+
+Бесплатные тарифы ограничены по запросам и нередко используют запросы для обучения моделей: не отправляйте туда рабочие данные, не проверив условия. Для конфиденциального — Ollama.
 
 ### Как включить голосовое управление
 1. Установите движок распознавания вручную по [docs/voice-setup.md](docs/voice-setup.md) (рекомендуется whisper.cpp). FocusDeck ничего не скачивает сам.

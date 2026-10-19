@@ -200,3 +200,14 @@ textarea.code { width: 100%; resize: vertical; }
 .ptt.on { color: var(--ok); font-weight: 600; }
 .provider-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .grow { flex: 1; }
+
+/* Provider endpoints */
+.endpoint { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.endpoint.active { border-color: var(--accent); }
+.endpoint .checkbox { display: flex; align-items: center; gap: 8px; }
+.endpoint-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.small-button { align-self: flex-start; font-size: 12px; padding: 4px 8px; }
+.provider-settings section { max-width: 720px; }
+.endpoint-fields > .field:last-child { grid-column: 1 / -1; }
+.grow { min-width: 0; }
+.provider-settings a { color: var(--accent); }

@@ -170,12 +170,7 @@ impl SkillRegistry {
         let manifest = skill.manifest;
         let profile = profiles::get(&manifest.model_profile)
             .ok_or_else(|| anyhow::anyhow!("unknown model profile `{}`", manifest.model_profile))?;
-        let kind = provider_override.unwrap_or(profile.provider);
-        let model = match model_override.filter(|m| !m.trim().is_empty()) {
-            Some(m) => m,
-            None if kind == profile.provider => profile.model.to_string(),
-            None => anyhow::bail!("choose a model for {}", kind.as_str()),
-        };
+        let (kind, model) = router.resolve(&profile, provider_override, model_override)?;
 
         let task_id = uuid::Uuid::new_v4().to_string();
         sqlx::query("INSERT INTO agent_tasks (id, skill_id, status, input_json) VALUES (?, ?, 'running', ?)")

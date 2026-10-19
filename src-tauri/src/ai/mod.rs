@@ -63,41 +63,84 @@ pub async fn ai_set_config(
     router.set_config(&pool, config).await.map_err(err)
 }
 
+// `endpoint_id` selects an OpenAI-compatible endpoint; `None` means the active one.
+
 #[tauri::command]
-pub async fn ai_list_models(router: State<'_, AiRouter>, provider: ProviderKind) -> CmdResult<Vec<ModelInfo>> {
-    router.provider(provider).map_err(err)?.list_models().await.map_err(err)
+pub async fn ai_list_models(
+    router: State<'_, AiRouter>,
+    provider: ProviderKind,
+    endpoint_id: Option<String>,
+) -> CmdResult<Vec<ModelInfo>> {
+    let provider = router.provider_for(provider, endpoint_id.as_deref()).map_err(err)?;
+    provider.list_models().await.map_err(err)
 }
 
 #[tauri::command]
-pub async fn ai_test_connection(router: State<'_, AiRouter>, provider: ProviderKind) -> CmdResult<()> {
-    router.provider(provider).map_err(err)?.test_connection().await.map_err(err)
+pub async fn ai_test_connection(
+    router: State<'_, AiRouter>,
+    provider: ProviderKind,
+    endpoint_id: Option<String>,
+) -> CmdResult<()> {
+    let provider = router.provider_for(provider, endpoint_id.as_deref()).map_err(err)?;
+    provider.test_connection().await.map_err(err)
 }
 
 /// Stores an API key in the OS keyring. The key never comes back to the frontend.
 #[tauri::command]
-pub fn ai_set_api_key(router: State<'_, AiRouter>, provider: ProviderKind, api_key: String) -> CmdResult<()> {
-    let key = provider.secret_key().ok_or("this provider does not use an API key")?;
+pub fn ai_set_api_key(
+    router: State<'_, AiRouter>,
+    provider: ProviderKind,
+    endpoint_id: Option<String>,
+    api_key: String,
+) -> CmdResult<()> {
+    let key = router
+        .secret_key(provider, endpoint_id.as_deref())
+        .map_err(err)?
+        .ok_or("this provider does not use an API key")?;
     let api_key = api_key.trim();
     if api_key.is_empty() {
         return Err("API key is empty".into());
     }
-    router.secrets().set(key, api_key).map_err(err)
+    router.secrets().set(&key, api_key).map_err(err)
 }
 
 #[tauri::command]
-pub fn ai_has_api_key(router: State<'_, AiRouter>, provider: ProviderKind) -> CmdResult<bool> {
-    match provider.secret_key() {
-        Some(key) => router.secrets().has(key).map_err(err),
+pub fn ai_has_api_key(router: State<'_, AiRouter>, provider: ProviderKind, endpoint_id: Option<String>) -> CmdResult<bool> {
+    match router.secret_key(provider, endpoint_id.as_deref()).map_err(err)? {
+        Some(key) => router.secrets().has(&key).map_err(err),
         None => Ok(true),
     }
 }
 
 #[tauri::command]
-pub fn ai_delete_api_key(router: State<'_, AiRouter>, provider: ProviderKind) -> CmdResult<()> {
-    match provider.secret_key() {
-        Some(key) => router.secrets().delete(key).map_err(err),
+pub fn ai_delete_api_key(router: State<'_, AiRouter>, provider: ProviderKind, endpoint_id: Option<String>) -> CmdResult<()> {
+    match router.secret_key(provider, endpoint_id.as_deref()).map_err(err)? {
+        Some(key) => router.secrets().delete(&key).map_err(err),
         None => Ok(()),
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ResolvedTarget {
+    pub provider: ProviderKind,
+    pub model: String,
+    /// Name of the OpenAI-compatible endpoint in use, when that provider is chosen.
+    pub endpoint_name: Option<String>,
+}
+
+/// Provider and model a profile uses right now (default provider applied).
+#[tauri::command]
+pub fn ai_resolve_target(router: State<'_, AiRouter>, profile_id: String) -> CmdResult<ResolvedTarget> {
+    let profile = profiles::get(&profile_id).ok_or("unknown profile")?;
+    let config = router.config();
+    // A missing default model is not an error here: the UI lets the user pick one.
+    let (provider, model) = router
+        .resolve(&profile, None, None)
+        .unwrap_or_else(|_| (config.default_provider.filter(|_| !profile.pinned_provider).unwrap_or(profile.provider), String::new()));
+    let endpoint_name = (provider == ProviderKind::OpenaiCompatible)
+        .then(|| config.endpoint(None).ok().map(|e| e.name.clone()))
+        .flatten();
+    Ok(ResolvedTarget { provider, model, endpoint_name })
 }
 
 #[tauri::command]
@@ -125,18 +168,7 @@ pub async fn ai_chat_stream(
     on_event: Channel<StreamEvent>,
 ) -> CmdResult<String> {
     let profile = profiles::get(&request.profile_id).ok_or("unknown profile")?;
-    let kind = request.provider.unwrap_or(profile.provider);
-    // The profile's model only fits the profile's own provider.
-    let model = match request.model.map(|m| m.trim().to_string()).filter(|m| !m.is_empty()) {
-        Some(m) => m,
-        None if kind == profile.provider => profile.model.to_string(),
-        None if kind == ProviderKind::OpenaiCompatible
-            && !router.config().openai_default_model.is_empty() =>
-        {
-            router.config().openai_default_model
-        }
-        None => return Err(format!("choose a model for {}", kind.as_str())),
-    };
+    let (kind, model) = router.resolve(&profile, request.provider, request.model).map_err(err)?;
     let message = request.message.trim().to_string();
     if message.is_empty() {
         return Err("message is empty".into());

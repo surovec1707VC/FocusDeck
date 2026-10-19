@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import ModelSelector from "../ai/ModelSelector";
-import { AiProfile, ProviderKind, aiApi } from "../../lib/ai";
+import { ProviderKind, ResolvedTarget, aiApi } from "../../lib/ai";
 import {
   SAFETY_LABELS,
   SkillInfo,
@@ -87,21 +87,19 @@ export default function SkillSettings({ skill }: { skill: SkillInfo }) {
 function TestRun({ skill }: { skill: SkillInfo }) {
   const m = skill.manifest;
   const [input, setInput] = useState(() => JSON.stringify(sampleInput(m.input_schema), null, 2));
-  const [profile, setProfile] = useState<AiProfile | null>(null);
+  const [resolved, setResolved] = useState<ResolvedTarget | null>(null);
   const [provider, setProvider] = useState<ProviderKind>("anthropic");
   const [model, setModel] = useState("");
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<SkillRunOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Start from what the skill's profile uses now (default provider applied).
   useEffect(() => {
-    aiApi.profiles().then((list) => {
-      const p = list.find((x) => x.id === m.model_profile) ?? null;
-      setProfile(p);
-      if (p) {
-        setProvider(p.provider);
-        setModel(p.model);
-      }
+    aiApi.resolveTarget(m.model_profile).then((t) => {
+      setResolved(t);
+      setProvider(t.provider);
+      setModel(t.model);
     });
   }, [m.model_profile]);
 
@@ -117,9 +115,7 @@ function TestRun({ skill }: { skill: SkillInfo }) {
     }
     setRunning(true);
     try {
-      const overrideProvider = profile && provider === profile.provider ? null : provider;
-      const overrideModel = profile && model === profile.model ? null : model;
-      setOutcome(await skillsApi.testRun(m.id, parsed, overrideProvider, overrideModel));
+      setOutcome(await skillsApi.testRun(m.id, parsed, provider, model || null));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -135,10 +131,12 @@ function TestRun({ skill }: { skill: SkillInfo }) {
       <ModelSelector
         provider={provider}
         model={model}
+        endpointName={resolved?.endpoint_name}
         disabled={running}
         onProviderChange={(p) => {
           setProvider(p);
-          setModel(profile && p === profile.provider ? profile.model : "");
+          // Empty model = the backend picks that provider's default model.
+          setModel(resolved && p === resolved.provider ? resolved.model : "");
         }}
         onModelChange={setModel}
       />

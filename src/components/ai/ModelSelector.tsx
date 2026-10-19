@@ -7,9 +7,21 @@ interface Props {
   onProviderChange: (provider: ProviderKind) => void;
   onModelChange: (model: string) => void;
   disabled?: boolean;
+  /** Active OpenAI-compatible endpoint, shown next to that provider. */
+  endpointName?: string | null;
+  /** Change to reload the model list (e.g. after switching endpoint). */
+  refreshKey?: number;
 }
 
-export default function ModelSelector({ provider, model, onProviderChange, onModelChange, disabled }: Props) {
+export default function ModelSelector({
+  provider,
+  model,
+  onProviderChange,
+  onModelChange,
+  disabled,
+  endpointName,
+  refreshKey,
+}: Props) {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +36,7 @@ export default function ModelSelector({ provider, model, onProviderChange, onMod
     return () => {
       cancelled = true;
     };
-  }, [provider]);
+  }, [provider, refreshKey]);
 
   const listId = `models-${provider}`;
 
@@ -39,7 +51,7 @@ export default function ModelSelector({ provider, model, onProviderChange, onMod
         >
           {(Object.keys(PROVIDER_LABELS) as ProviderKind[]).map((p) => (
             <option key={p} value={p}>
-              {PROVIDER_LABELS[p]}
+              {p === "openai_compatible" && endpointName ? `${PROVIDER_LABELS[p]}: ${endpointName}` : PROVIDER_LABELS[p]}
             </option>
           ))}
         </select>

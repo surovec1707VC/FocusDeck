@@ -78,6 +78,7 @@ pub fn run() {
             ai::ai_get_messages,
             ai::ai_delete_session,
             ai::ai_chat_stream,
+            ai::ai_resolve_target,
             ai::skills::skills_list,
             ai::skills::skills_issues,
             ai::skills::skills_reload,

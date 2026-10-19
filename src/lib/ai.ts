@@ -24,11 +24,40 @@ export interface ModelInfo {
   name: string;
 }
 
+export interface OpenAiEndpoint {
+  id: string;
+  name: string;
+  base_url: string;
+  default_model: string;
+}
+
 export interface RouterConfig {
   ollama_url: string;
-  openai_base_url: string;
-  openai_default_model: string;
+  ollama_default_model: string;
+  openai_endpoints: OpenAiEndpoint[];
+  active_openai_endpoint: string;
+  /** null = each profile uses its own provider. */
+  default_provider: ProviderKind | null;
 }
+
+export interface ResolvedTarget {
+  provider: ProviderKind;
+  model: string;
+  endpoint_name: string | null;
+}
+
+/**
+ * Known OpenAI-compatible services. Only base URLs are preset: model names and
+ * free-tier terms change often, so models are picked from the live list.
+ */
+export const ENDPOINT_PRESETS: { id: string; name: string; base_url: string; keys_url: string }[] = [
+  { id: "gemini", name: "Google Gemini", base_url: "https://generativelanguage.googleapis.com/v1beta/openai", keys_url: "https://aistudio.google.com/apikey" },
+  { id: "groq", name: "Groq", base_url: "https://api.groq.com/openai/v1", keys_url: "https://console.groq.com/keys" },
+  { id: "openrouter", name: "OpenRouter", base_url: "https://openrouter.ai/api/v1", keys_url: "https://openrouter.ai/settings/keys" },
+  { id: "mistral", name: "Mistral", base_url: "https://api.mistral.ai/v1", keys_url: "https://console.mistral.ai/api-keys" },
+  { id: "openai", name: "OpenAI", base_url: "https://api.openai.com/v1", keys_url: "https://platform.openai.com/api-keys" },
+  { id: "lm-studio", name: "LM Studio (local)", base_url: "http://localhost:1234/v1", keys_url: "" },
+];
 
 export interface AiSession {
   id: string;
@@ -58,12 +87,18 @@ export const aiApi = {
   profiles: () => invoke<AiProfile[]>("ai_list_profiles"),
   getConfig: () => invoke<RouterConfig>("ai_get_config"),
   setConfig: (config: RouterConfig) => invoke<void>("ai_set_config", { config }),
-  listModels: (provider: ProviderKind) => invoke<ModelInfo[]>("ai_list_models", { provider }),
-  testConnection: (provider: ProviderKind) => invoke<void>("ai_test_connection", { provider }),
-  setApiKey: (provider: ProviderKind, apiKey: string) =>
-    invoke<void>("ai_set_api_key", { provider, apiKey }),
-  hasApiKey: (provider: ProviderKind) => invoke<boolean>("ai_has_api_key", { provider }),
-  deleteApiKey: (provider: ProviderKind) => invoke<void>("ai_delete_api_key", { provider }),
+  // endpointId picks an OpenAI-compatible endpoint; omitted = the active one.
+  listModels: (provider: ProviderKind, endpointId?: string) =>
+    invoke<ModelInfo[]>("ai_list_models", { provider, endpointId }),
+  testConnection: (provider: ProviderKind, endpointId?: string) =>
+    invoke<void>("ai_test_connection", { provider, endpointId }),
+  setApiKey: (provider: ProviderKind, apiKey: string, endpointId?: string) =>
+    invoke<void>("ai_set_api_key", { provider, apiKey, endpointId }),
+  hasApiKey: (provider: ProviderKind, endpointId?: string) =>
+    invoke<boolean>("ai_has_api_key", { provider, endpointId }),
+  deleteApiKey: (provider: ProviderKind, endpointId?: string) =>
+    invoke<void>("ai_delete_api_key", { provider, endpointId }),
+  resolveTarget: (profileId: string) => invoke<ResolvedTarget>("ai_resolve_target", { profileId }),
   sessions: () => invoke<AiSession[]>("ai_list_sessions"),
   messages: (sessionId: string) => invoke<AiMessage[]>("ai_get_messages", { sessionId }),
   deleteSession: (sessionId: string) => invoke<void>("ai_delete_session", { sessionId }),

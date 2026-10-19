@@ -10,6 +10,8 @@ pub struct AiProfile {
     pub name: &'static str,
     pub description: &'static str,
     pub provider: ProviderKind,
+    /// Keeps its own provider even when a default provider is set (privacy).
+    pub pinned_provider: bool,
     pub model: &'static str,
     pub system_prompt: &'static str,
     pub max_tokens: u32,
@@ -27,6 +29,7 @@ pub fn all() -> Vec<AiProfile> {
             name: "Fast Assistant",
             description: "Short, direct answers for everyday questions.",
             provider: ProviderKind::Anthropic,
+            pinned_provider: false,
             model: anthropic::DEFAULT_MODEL,
             system_prompt: "You are FocusDeck's assistant. Answer briefly and directly. \
                             Use lists only when they make the answer easier to scan.",
@@ -38,6 +41,7 @@ pub fn all() -> Vec<AiProfile> {
             name: "Coding Assistant",
             description: "Writes and explains code; careful about correctness.",
             provider: ProviderKind::Anthropic,
+            pinned_provider: false,
             model: anthropic::DEFAULT_MODEL,
             system_prompt: "You are a senior software engineer. Give working code that matches \
                             the user's language and style, explain non-obvious decisions, and \
@@ -50,6 +54,7 @@ pub fn all() -> Vec<AiProfile> {
             name: "Prompt Improver",
             description: "Rewrites a prompt to be clearer and more specific.",
             provider: ProviderKind::Anthropic,
+            pinned_provider: false,
             model: anthropic::DEFAULT_MODEL,
             system_prompt: "Rewrite the user's prompt so another AI model can act on it: state \
                             the goal, context, constraints and the expected output format. \
@@ -62,6 +67,7 @@ pub fn all() -> Vec<AiProfile> {
             name: "Error Explainer",
             description: "Explains an error message or stack trace and how to fix it.",
             provider: ProviderKind::Anthropic,
+            pinned_provider: false,
             model: anthropic::DEFAULT_MODEL,
             system_prompt: "The user pastes an error, log or stack trace. Explain the most likely \
                             cause in plain language, then give concrete fix steps. If the input \
@@ -74,6 +80,7 @@ pub fn all() -> Vec<AiProfile> {
             name: "Task Planner",
             description: "Breaks a goal into ordered, actionable steps.",
             provider: ProviderKind::Anthropic,
+            pinned_provider: false,
             model: anthropic::DEFAULT_MODEL,
             system_prompt: "Turn the user's goal into a plan of small, ordered, verifiable steps. \
                             Note dependencies and open questions. Do not perform any actions \
@@ -86,6 +93,7 @@ pub fn all() -> Vec<AiProfile> {
             name: "Local Private Assistant",
             description: "Runs entirely on this machine through Ollama; nothing leaves the PC.",
             provider: ProviderKind::Ollama,
+            pinned_provider: true,
             model: "llama3.2",
             system_prompt: "You are a helpful assistant running locally. Answer concisely.",
             max_tokens: 4_096,

@@ -26,15 +26,6 @@ impl ProviderKind {
             Self::Anthropic => "anthropic",
         }
     }
-
-    /// Keyring entry holding this provider's API key, if it needs one.
-    pub fn secret_key(self) -> Option<&'static str> {
-        match self {
-            Self::Ollama => None,
-            Self::OpenaiCompatible => Some("ai.openai_compatible.api_key"),
-            Self::Anthropic => Some("ai.anthropic.api_key"),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,6 +82,8 @@ pub enum AiError {
     },
     #[error("API key for {0} is not set")]
     MissingApiKey(&'static str),
+    #[error("{0}")]
+    Config(String),
     #[error("unexpected response: {0}")]
     Parse(String),
     #[error("stream error: {0}")]

@@ -24,24 +24,30 @@ export default function AiAssistant() {
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [endpointName, setEndpointName] = useState<string | null>(null);
+  // Bumped when provider settings change so model lists and defaults reload.
+  const [configVersion, setConfigVersion] = useState(0);
   const keyCounter = useRef(0);
   const nextKey = () => `local-${keyCounter.current++}`;
 
   const refreshSessions = useCallback(() => aiApi.sessions().then(setSessions), []);
 
   useEffect(() => {
-    aiApi.profiles().then((list) => {
-      setProfiles(list);
-      const first = list.find((p) => p.id === "fast_assistant") ?? list[0];
-      if (first) applyProfile(first);
-    });
+    aiApi.profiles().then(setProfiles);
     refreshSessions();
   }, [refreshSessions]);
 
+  // Provider/model the profile uses now (honours the default provider setting).
+  useEffect(() => {
+    aiApi.resolveTarget(profileId).then((t) => {
+      setProvider(t.provider);
+      setModel(t.model);
+      setEndpointName(t.endpoint_name);
+    });
+  }, [profileId, configVersion]);
+
   function applyProfile(profile: AiProfile) {
     setProfileId(profile.id);
-    setProvider(profile.provider);
-    setModel(profile.model);
   }
 
   async function openSession(id: string) {
@@ -155,6 +161,8 @@ export default function AiAssistant() {
             <ModelSelector
               provider={provider}
               model={model}
+              endpointName={endpointName}
+              refreshKey={configVersion}
               disabled={streaming}
               onProviderChange={(p) => {
                 setProvider(p);
@@ -163,7 +171,7 @@ export default function AiAssistant() {
               onModelChange={setModel}
             />
           </div>
-          <ProviderSettings />
+          <ProviderSettings onConfigChanged={() => setConfigVersion((v) => v + 1)} />
           <ChatWindow items={items} error={error} notice={notice} />
           <MessageInput onSend={send} disabled={streaming} />
         </section>

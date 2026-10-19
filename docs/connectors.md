@@ -23,7 +23,7 @@
 | id | auth | health check | по умолчанию |
 |---|---|---|---|
 | ollama | local | GET `{base_url}/api/version` | вкл |
-| openai-compatible | api_key (общий с AI Assistant) | ai_provider | вкл |
+| openai-compatible | none (ключи — у endpoint-ов в AI Assistant) | ai_provider (активный endpoint) | вкл |
 | anthropic | api_key (общий с AI Assistant) | ai_provider | вкл |
 | git | local | `git` в PATH | выкл |
 | github | api_key (PAT) | credentials | выкл |
