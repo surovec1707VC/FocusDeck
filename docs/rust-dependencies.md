@@ -1,4 +1,4 @@
-# Rust dependencies (`src-tauri/Cargo.toml`)
+﻿# Rust dependencies (`src-tauri/Cargo.toml`)
 
 Все крейты добавлены через `cargo add`, `cargo check` проходит (rustc 1.99.1, MSVC).
 
@@ -9,8 +9,7 @@
 | serde_json | 1.0.x | JSON | installed | — |
 | sqlx (runtime-tokio, sqlite, chrono, uuid, json, migrate, macros) | 0.9.0 | SQLite + миграции | installed | макросы `query!` требуют `DATABASE_URL` или `.sqlx` offline-кеш — используем `query`/`query_as` без макросов |
 | reqwest (json, stream) | 0.13.5 | HTTP к AI-провайдерам | installed | — |
-| reqwest-eventsource | 0.6.0 | SSE-стриминг | installed, **конфликт** | зависит от reqwest **0.12** → в дереве две версии reqwest, `EventSource` не принимает `RequestBuilder` 0.13. Альтернатива: `eventsource-stream` поверх `reqwest::Response::bytes_stream()` (0.13) либо откат reqwest до 0.12. Решить на этапе AI Router |
-| tracing | 0.1.44 | логирование | installed | — |
+| eventsource-stream | latest | SSE-парсинг поверх `reqwest::Response::bytes_stream()` (reqwest 0.13) | installed | — |`n| futures-util | latest | `StreamExt` для стримов | installed | — |`n| ~~reqwest-eventsource~~ | — | — | removed | тянул reqwest 0.12. Замечание: reqwest 0.12 всё равно остаётся в дереве через `tauri-plugin-http` — это нормально, типы не пересекаются |`n| tracing | 0.1.44 | логирование | installed | — |
 | tracing-subscriber (env-filter) | 0.3.23 | вывод логов | installed | может конфликтовать с `tauri-plugin-log` (оба ставят глобальный logger) — инициализировать только один |
 | thiserror | 2.0.21 | типизированные ошибки | installed | — |
 | anyhow | 1.0.104 | ошибки в прикладном коде | installed | — |
