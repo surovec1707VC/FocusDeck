@@ -2,12 +2,14 @@
 import AiAssistant from "./pages/AiAssistant";
 import ControlCenter from "./pages/ControlCenter";
 import Modules from "./pages/Modules";
+import Skills from "./pages/Skills";
 import "./App.css";
 
-type Page = "ai" | "control-center" | "modules";
+type Page = "ai" | "skills" | "control-center" | "modules";
 
 const NAV: { id: Page; label: string }[] = [
   { id: "ai", label: "AI Assistant" },
+  { id: "skills", label: "Skills" },
   { id: "control-center", label: "Control Center" },
   { id: "modules", label: "Modules" },
 ];
@@ -34,6 +36,7 @@ function App() {
       </aside>
       <main className="content">
         {page === "ai" && <AiAssistant />}
+        {page === "skills" && <Skills />}
         {page === "control-center" &&<ControlCenter initialSelectedId={openModuleId} />}
         {page === "modules" && (
           <Modules
