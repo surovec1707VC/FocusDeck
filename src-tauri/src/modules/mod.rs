@@ -125,13 +125,11 @@ pub fn builtin_modules() -> Vec<Arc<dyn Module>> {
         placeholder(
             "voice",
             "Voice Control",
-            "Speech-to-text, text-to-speech and voice intents.",
+            "Speech-to-text, text-to-speech and voice intents. Configured on the Voice page.",
             ModuleCategory::Voice,
             false,
             vec!["microphone", "global-shortcut"],
-            json!({ "properties": {
-                "push_to_talk": { "type": "string", "title": "Push-to-talk hotkey", "default": "Ctrl+Alt+Space" }
-            }}),
+            json!({ "properties": {} }),
         ),
         placeholder(
             "system_monitor",

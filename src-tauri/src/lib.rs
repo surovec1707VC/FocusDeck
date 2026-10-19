@@ -4,6 +4,7 @@ mod db;
 mod modules;
 mod plugins;
 mod secrets;
+mod voice;
 
 use std::path::PathBuf;
 
@@ -42,7 +43,14 @@ pub fn run() {
             )?;
             tauri::async_runtime::block_on(connectors.reload())?;
 
+            let voice = tauri::async_runtime::block_on(voice::VoiceState::load(&pool))?;
+            // A taken hotkey must not stop the app from starting.
+            if let Err(e) = voice.apply_hotkey(app.handle()) {
+                tauri_plugin_log::log::warn!("push-to-talk hotkey not registered: {e}");
+            }
+
             app.manage(pool);
+            app.manage(voice);
             app.manage(registry);
             app.manage(router);
             app.manage(skills);
@@ -86,6 +94,11 @@ pub fn run() {
             connectors::connectors_delete_secret,
             connectors::connectors_test,
             connectors::connectors_logs,
+            voice::voice_get_settings,
+            voice::voice_update_settings,
+            voice::voice_reset_settings,
+            voice::voice_provider_status,
+            voice::voice_route_intent,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
