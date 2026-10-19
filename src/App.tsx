@@ -4,14 +4,16 @@ import Connectors from "./pages/Connectors";
 import ControlCenter from "./pages/ControlCenter";
 import Modules from "./pages/Modules";
 import Skills from "./pages/Skills";
+import VoiceControl from "./pages/VoiceControl";
 import "./App.css";
 
-type Page = "ai" | "skills" | "connectors" | "control-center" | "modules";
+type Page = "ai" | "skills" | "connectors" | "voice" | "control-center" | "modules";
 
 const NAV: { id: Page; label: string }[] = [
   { id: "ai", label: "AI Assistant" },
   { id: "skills", label: "Skills" },
   { id: "connectors", label: "Connectors" },
+  { id: "voice", label: "Voice" },
   { id: "control-center", label: "Control Center" },
   { id: "modules", label: "Modules" },
 ];
@@ -40,6 +42,7 @@ function App() {
         {page === "ai" && <AiAssistant />}
         {page === "skills" && <Skills />}
         {page === "connectors" && <Connectors />}
+        {page === "voice" && <VoiceControl />}
         {page === "control-center" && <ControlCenter initialSelectedId={openModuleId} />}
         {page === "modules" && (
           <Modules
