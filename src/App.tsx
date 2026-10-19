@@ -1,17 +1,19 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import AiAssistant from "./pages/AiAssistant";
 import ControlCenter from "./pages/ControlCenter";
 import Modules from "./pages/Modules";
 import "./App.css";
 
-type Page = "control-center" | "modules";
+type Page = "ai" | "control-center" | "modules";
 
 const NAV: { id: Page; label: string }[] = [
+  { id: "ai", label: "AI Assistant" },
   { id: "control-center", label: "Control Center" },
   { id: "modules", label: "Modules" },
 ];
 
 function App() {
-  const [page, setPage] = useState<Page>("control-center");
+  const [page, setPage] = useState<Page>("ai");
   const [openModuleId, setOpenModuleId] = useState<string | null>(null);
 
   return (
@@ -31,7 +33,8 @@ function App() {
         </nav>
       </aside>
       <main className="content">
-        {page === "control-center" && <ControlCenter initialSelectedId={openModuleId} />}
+        {page === "ai" && <AiAssistant />}
+        {page === "control-center" &&<ControlCenter initialSelectedId={openModuleId} />}
         {page === "modules" && (
           <Modules
             onOpen={(id) => {

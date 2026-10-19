@@ -126,10 +126,17 @@ pub async fn ai_chat_stream(
 ) -> CmdResult<String> {
     let profile = profiles::get(&request.profile_id).ok_or("unknown profile")?;
     let kind = request.provider.unwrap_or(profile.provider);
-    let model = request
-        .model
-        .filter(|m| !m.trim().is_empty())
-        .unwrap_or_else(|| profile.model.to_string());
+    // The profile's model only fits the profile's own provider.
+    let model = match request.model.map(|m| m.trim().to_string()).filter(|m| !m.is_empty()) {
+        Some(m) => m,
+        None if kind == profile.provider => profile.model.to_string(),
+        None if kind == ProviderKind::OpenaiCompatible
+            && !router.config().openai_default_model.is_empty() =>
+        {
+            router.config().openai_default_model
+        }
+        None => return Err(format!("choose a model for {}", kind.as_str())),
+    };
     let message = request.message.trim().to_string();
     if message.is_empty() {
         return Err("message is empty".into());
