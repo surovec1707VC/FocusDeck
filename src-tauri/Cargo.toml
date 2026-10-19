@@ -49,6 +49,7 @@ enigo = "0.6.1"
 arboard = "3.7.0"
 eventsource-stream = "0.2.3"
 futures-util = "0.3.34"
+async-trait = "0.1.92"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
