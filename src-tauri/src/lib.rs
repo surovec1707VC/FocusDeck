@@ -284,6 +284,7 @@ pub fn run() {
             automation::automations_pick,
             focus::focus_mode_get,
             focus::focus_mode_set,
+            devtools::devtools_pick_folder,
             devtools::git::git_repos,
             devtools::git::git_open_repo,
             devtools::git::git_forget_repo,

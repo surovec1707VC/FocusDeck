@@ -246,8 +246,12 @@ async fn build(app: &AppHandle, shell: &str, cwd: &Path, command: &str) -> AppRe
     cmd.current_dir(cwd);
     match shell {
         "powershell" => {
+            // Errors are written to stderr as plain text: with a redirected
+            // stderr PowerShell would otherwise serialize them as CLIXML.
             let script = format!(
-                "$ProgressPreference='SilentlyContinue';[Console]::OutputEncoding=[Text.Encoding]::UTF8;$OutputEncoding=[Text.Encoding]::UTF8\n{command}\nif ($LASTEXITCODE) {{ exit $LASTEXITCODE }} elseif (-not $?) {{ exit 1 }}"
+                "$ProgressPreference='SilentlyContinue';[Console]::OutputEncoding=[Text.Encoding]::UTF8;$OutputEncoding=[Text.Encoding]::UTF8;$global:__fdErr=$false\n\
+                 & {{\n{command}\n}} 2>&1 | ForEach-Object {{ if ($_ -is [System.Management.Automation.ErrorRecord]) {{ [Console]::Error.WriteLine(($_ | Out-String).TrimEnd()); $global:__fdErr=$true }} else {{ $_ }} }} | Out-String -Stream -Width 220\n\
+                 if ($LASTEXITCODE) {{ exit $LASTEXITCODE }} elseif ($global:__fdErr) {{ exit 1 }}"
             );
             cmd.args(["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", &ps_encoded(&script)]);
         }

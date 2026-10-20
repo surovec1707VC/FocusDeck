@@ -142,16 +142,29 @@ pub async fn kill_tree(pid: u32) {
 }
 
 /// Streaming decoder for program output: UTF-8 (a character split between
-/// chunks is carried over), falling back to the OEM code page.
+/// chunks is carried over), falling back to the OEM code page. Output that
+/// starts as UTF-16LE (wsl.exe's own messages) is decoded as UTF-16.
 #[derive(Default)]
 pub struct Decoder {
     carry: Vec<u8>,
+    utf16: Option<bool>,
 }
 
 impl Decoder {
     pub fn push(&mut self, bytes: &[u8]) -> String {
         let mut buf = std::mem::take(&mut self.carry);
         buf.extend_from_slice(bytes);
+        if self.utf16.is_none() && !buf.is_empty() {
+            // In UTF-16LE Latin and Cyrillic text every high byte (odd
+            // position) is 0x00 or 0x04; UTF-8 and OEM text never look so.
+            self.utf16 = Some(buf.len() >= 2 && buf.iter().skip(1).step_by(2).all(|b| *b == 0 || *b == 4));
+        }
+        if self.utf16 == Some(true) {
+            let even = buf.len() & !1;
+            self.carry = buf[even..].to_vec();
+            let units: Vec<u16> = buf[..even].chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+            return String::from_utf16_lossy(&units).trim_start_matches('\u{feff}').to_string();
+        }
         match std::str::from_utf8(&buf) {
             Ok(s) => s.to_string(),
             Err(e) if e.error_len().is_none() => {
@@ -198,6 +211,17 @@ pub fn spawn_console(program: &Path, args: &[String], raw_tail: Option<&str>, cw
     Ok(())
 }
 
+/// Folder picker for the Developer Tools pages; `None` when cancelled.
+#[tauri::command]
+pub async fn devtools_pick_folder(app: AppHandle, title: Option<String>) -> AppResult<Option<String>> {
+    use tauri_plugin_dialog::DialogExt;
+    let h = app.clone();
+    let picked = tauri::async_runtime::spawn_blocking(move || h.dialog().file().set_title(title.unwrap_or_else(|| "Выберите папку".into())).blocking_pick_folder())
+        .await
+        .map_err(anyhow::Error::from)?;
+    Ok(picked.and_then(|p| p.into_path().ok()).map(|p| p.display().to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -210,6 +234,12 @@ mod tests {
         out += &d.push(&bytes[3..]);
         out += &d.finish();
         assert_eq!(out, "привет");
+
+        let utf16: Vec<u8> = "Отсутствует подсистема Windows для Linux\r\n".encode_utf16().flat_map(u16::to_le_bytes).collect();
+        let mut d = Decoder::default();
+        let mut out = d.push(&utf16[..5]);
+        out += &d.push(&utf16[5..]);
+        assert_eq!(out, "Отсутствует подсистема Windows для Linux\r\n");
     }
 
     #[test]
