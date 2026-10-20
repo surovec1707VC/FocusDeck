@@ -170,25 +170,110 @@ export interface ImportReport {
   warnings: string[];
 }
 
+export type LayoutProfile = "work" | "coding" | "streaming" | "gaming" | "focus" | "custom";
+
 export interface Layout {
   id: string;
   name: string;
+  profile: LayoutProfile;
+  /** Global shortcut that switches to this layout. */
+  hotkey: string | null;
   is_active: boolean;
+  position: number;
+  widget_count: number;
   created_at: string;
   updated_at: string;
 }
 
-export type WidgetKind = "clock" | "note" | "tasks" | "status";
-export type WidgetSize = "sm" | "md" | "lg";
+export type WidgetKind =
+  | "clock"
+  | "date"
+  | "calendar"
+  | "countdown"
+  | "stopwatch"
+  | "notes"
+  | "todo"
+  | "quick_links"
+  | "app_launcher"
+  | "system_info"
+  | "clipboard"
+  | "notifications"
+  | "weather"
+  | "status";
 
+export type WidgetCategory = "time" | "productivity" | "system" | "information";
+export type DataSource = "local" | "database" | "config" | "system" | "clipboard" | "network";
+
+/** A widget on a layout. Position and size are in grid cells. */
 export interface Widget {
   id: string;
   layout_id: string;
   kind: WidgetKind;
   title: string;
-  size: WidgetSize;
   position: number;
   config: Record<string, unknown>;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pinned: boolean;
+  collapsed: boolean;
+  hidden: boolean;
+}
+
+export interface WidgetPatch {
+  title?: string;
+  config?: Record<string, unknown>;
+  pinned?: boolean;
+  collapsed?: boolean;
+  hidden?: boolean;
+}
+
+export interface GridItem {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** A widget kind and the state of its module (Widgets page). */
+export interface WidgetCatalogEntry {
+  kind: WidgetKind;
+  title: string;
+  module_id: string;
+  name: string;
+  description: string;
+  details: string;
+  category: WidgetCategory;
+  data_source: DataSource;
+  default_size: { w: number; h: number };
+  min_size: { w: number; h: number };
+  refresh_secs: number;
+  enabled: boolean;
+  available: boolean;
+  missing_modules: string[];
+  permissions: ModulePermission[];
+  missing_permissions: string[];
+  settings: Settings;
+  settings_schema: SettingsSchema;
+  instances: number;
+}
+
+export interface WidgetData<T = any> {
+  widget_id: string;
+  kind: WidgetKind;
+  data: T;
+  fetched_at: string | null;
+  from_cache: boolean;
+  /** Why fresh data isn't available; `data` may still hold cached data. */
+  error: string | null;
+  refresh_secs: number;
+}
+
+export interface PickedApp {
+  name: string;
+  path: string;
 }
 
 export interface Task {
@@ -275,18 +360,27 @@ export const api = {
   exportConfigToFile: () => call<string | null>("export_config_to_file"),
   readConfigFile: () => call<string | null>("read_config_file"),
 
+  // Layouts (see docs/widgets.md)
   layoutsList: () => call<Layout[]>("layouts_list"),
-  layoutsCreate: (name: string) => call<Layout[]>("layouts_create", { name }),
+  layoutsCreate: (name: string, profile: LayoutProfile = "custom") => call<Layout[]>("layouts_create", { name, profile }),
   layoutsRename: (id: string, name: string) => call<Layout[]>("layouts_rename", { id, name }),
+  layoutsDuplicate: (id: string) => call<Layout[]>("layouts_duplicate", { id }),
   layoutsActivate: (id: string) => call<Layout[]>("layouts_activate", { id }),
   layoutsDelete: (id: string) => call<Layout[]>("layouts_delete", { id }),
+  layoutsSetHotkey: (id: string, hotkey: string | null) => call<Layout[]>("layouts_set_hotkey", { id, hotkey }),
 
+  // Widgets
+  widgetCatalog: () => call<WidgetCatalogEntry[]>("widget_catalog"),
   widgetsList: (layoutId?: string) => call<Widget[]>("widgets_list", { layoutId }),
-  widgetsAdd: (kind: WidgetKind, title: string, size: WidgetSize) => call<Widget[]>("widgets_add", { kind, title, size }),
-  widgetsUpdate: (id: string, patch: { title?: string; size?: WidgetSize; config?: Record<string, unknown> }) =>
-    call<Widget>("widgets_update", { id, patch }),
-  widgetsMove: (id: string, delta: number) => call<void>("widgets_move", { id, delta }),
+  widgetsAdd: (kind: WidgetKind, layoutId?: string, title?: string) => call<Widget>("widgets_add", { kind, layoutId, title }),
+  widgetsUpdate: (id: string, patch: WidgetPatch) => call<Widget>("widgets_update", { id, patch }),
+  widgetsSaveGrid: (layoutId: string, items: GridItem[]) => call<void>("widgets_save_grid", { layoutId, items }),
   widgetsRemove: (id: string) => call<void>("widgets_remove", { id }),
+  widgetData: <T = any>(id: string, params?: Record<string, unknown>, force = false) =>
+    call<WidgetData<T>>("widget_data", { id, params, force }),
+  widgetAction: <T = any>(id: string, action: string, payload?: Record<string, unknown>, params?: Record<string, unknown>) =>
+    call<WidgetData<T>>("widget_action", { id, action, payload, params }),
+  widgetPickApp: () => call<PickedApp | null>("widget_pick_app"),
 
   tasksList: () => call<Task[]>("tasks_list"),
   tasksAdd: (title: string) => call<Task[]>("tasks_add", { title }),
@@ -307,4 +401,6 @@ export const EVENTS = {
   navigate: "focusdeck://navigate",
   modulesChanged: "focusdeck://modules-changed",
   settingsChanged: "focusdeck://settings-changed",
+  layoutChanged: "focusdeck://layout-changed",
+  clipboardChanged: "focusdeck://clipboard-changed",
 } as const;
