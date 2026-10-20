@@ -1,6 +1,6 @@
 # Архитектура FocusDeck
 
-Локальное desktop-приложение для Windows 10/11 на Tauri 2. **Без ИИ, телеметрии, аналитики, облачной синхронизации и сбора данных**: все данные лежат в локальной SQLite. В сеть обращается только виджет «Погода» (open-meteo.com) и только с разрешением «Сеть: прогноз погоды».
+Локальное desktop-приложение для Windows 10/11 на Tauri 2. **Без ИИ, телеметрии, аналитики, облачной синхронизации и сбора данных**: все данные лежат в локальной SQLite. В сеть обращается только виджет «Погода» (open-meteo.com) и только с разрешением «Сеть: прогноз погоды». Облачные интеграции выключены и приостановлены Offline Mode (по умолчанию включён); на текущем этапе они не обращаются к внешним API.
 
 ## Backend (`src-tauri/src`)
 
@@ -24,6 +24,7 @@
 | `organizer/` | **Desktop Organizer**: правила, предпросмотр, перемещение без удаления, журнал и откат. API — [desktop-organizer.md](desktop-organizer.md) |
 | `windows_integration/` | **Windows Integration**: окна, приложения, рабочие столы, звук (Core Audio), яркость, сеть, питание, скриншоты, буфер, уведомления, UI Automation. API — [windows-integration.md](windows-integration.md) |
 | `devtools/` | **Developer Tools**: Git, Project Launcher, Terminal Quick Launcher, API Tester, Regex Tester, JSON/YAML Tools — шесть модулей. API — [developer-tools.md](developer-tools.md) |
+| `integrations/` | **Integrations**: 13 коннекторов по манифестам (`manifests/*.json`), реестр в SQLite, секреты в Windows Credential Manager, проверки состояния без сети, Offline Mode, журнал. API — [integrations.md](integrations.md), формат — [integration.schema.json](integration.schema.json) |
 | `safety.rs` | каталог действий, **Safe Mode**, **Action Log** и отмена действий |
 | `focus.rs` | Focus Mode (скрывает всплывающие уведомления) |
 | `hotkeys.rs` | глобальные горячие клавиши: показ/скрытие окна + хоткеи автоматизаций |
@@ -67,7 +68,7 @@
 ## База данных
 Файл `%APPDATA%\com.focusdeck.app\focusdeck.sqlite`. Миграция `0001_init.sql` создаёт 15 таблиц; `0003_widget_system.sql` добавляет сетку виджетов, профили макетов, `widget_cache`, `calendar_events`, `notifications`. Исходно: settings, modules, module_settings, widget_layouts, widgets, automations, automation_logs, tasks, notes, snippets, clipboard_history, permissions, permission_logs, connectors, connector_settings.
 
-Миграция `0004_productivity.sql` расширяет notes, tasks, snippets и добавляет таймеры, секундомеры и историю. Таблицы connectors и connector_settings пока только схема, без интерфейса. Коннекторы предназначены для локальных интеграций, без облака.
+Миграция `0004_productivity.sql` расширяет notes, tasks, snippets и добавляет таймеры, секундомеры и историю. Миграция `0010_integrations.sql` расширяет `connectors` (выданные разрешения, последняя проверка) и добавляет `connector_logs`.
 
 Новая миграция — следующий файл `src-tauri/src/db/migrations/0010_*.sql`. Уже применённые миграции не редактируйте: sqlx проверяет их контрольные суммы.
 
@@ -88,4 +89,4 @@
 Безопасность: CSP разрешает только локальные ресурсы и IPC. Фронтенду выданы лишь права на управление окном (перетаскивание, свернуть, развернуть, закрыть) и `opener` (показать файл в папке). Хоткеи, автозапуск и состояние окна доступны только из Rust.
 
 ## Тесты
-`cd src-tauri && cargo test --lib` — 103 теста, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), ошибки.
+`cd src-tauri && cargo test --lib` — 109 тестов, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), манифесты и Offline Mode интеграций, ошибки.

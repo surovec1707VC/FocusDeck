@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "focusdeck://integration-manifest",
+  "title": "FocusDeck integration manifest",
+  "description": "One file per connector in src-tauri/src/integrations/manifests/. Checked by serde (unknown fields are rejected) and manifest::validate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "description", "icon", "version", "kind", "auth", "permissions", "actions", "events", "settings", "health", "enabled_by_default", "docs_url"],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_.]{1,64}$" }
+  },
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "icon": { "type": "string", "description": "Icon key, mapped to an icon in src/pages/Integrations.tsx" },
+    "version": { "type": "string" },
+    "kind": { "enum": ["local", "cloud"], "description": "cloud connectors are paused in Offline Mode and need confirmation to enable" },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["none", "token", "api_key", "oauth2", "password"] },
+        "label": { "type": "string" },
+        "hint": { "type": "string" },
+        "optional": { "type": "boolean", "default": false, "description": "works without the secret too" }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description", "risk"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "risk": { "enum": ["read", "change", "dangerous"] }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "permissions": { "type": "array", "items": { "$ref": "#/$defs/id" }, "description": "ids from this manifest's permissions" }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "type": "string" }, "description": { "type": "string" } }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Module settings schema subset: { type: object, properties: { key: { type, title, default, minimum, maximum, enum } } }. Every key needs a default; keys with token/secret/password/api_key are rejected.",
+      "required": ["type", "properties"]
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["none", "token", "executable", "path", "local_port"] },
+        "target": { "type": ["string", "null"], "description": "executable: program looked up in PATH" },
+        "setting": { "type": ["string", "null"], "description": "settings key with a path or port" }
+      }
+    },
+    "enabled_by_default": { "type": "boolean" },
+    "docs_url": { "type": "string", "pattern": "^https://" }
+  }
+}
