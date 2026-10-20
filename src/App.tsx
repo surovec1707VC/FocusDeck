@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Sidebar";
 import TitleBar from "./components/TitleBar";
 import Toasts from "./components/Toasts";
+import AutomationConfirm from "./components/AutomationConfirm";
 import { EVENTS } from "./lib/api";
 import About from "./pages/About";
 import Automations from "./pages/Automations";
@@ -66,6 +67,7 @@ export default function App() {
         </main>
       </div>
       <Toasts />
+      <AutomationConfirm />
     </div>
   );
 }

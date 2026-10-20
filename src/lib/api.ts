@@ -537,13 +537,47 @@ export interface StopwatchResult {
   saved_at: string;
 }
 
+export type ChangeKind = "any" | "up" | "down";
+
 export type Trigger =
   | { type: "app_start" }
+  | { type: "system_start"; within_minutes?: number }
+  | { type: "process_started"; process: string }
+  | { type: "process_stopped"; process: string }
+  | { type: "window_focus"; process?: string; title_contains?: string }
+  | { type: "hotkey"; shortcut: string }
+  | { type: "time"; time: string; days?: number[] }
   | { type: "interval"; minutes: number }
-  | { type: "hotkey"; shortcut: string };
+  | { type: "display_change"; event?: ChangeKind }
+  | { type: "network_change"; event?: ChangeKind }
+  | { type: "manual" }
+  | { type: "ui_button"; label?: string };
+
+export type Condition =
+  | { type: "process_running"; process: string; running?: boolean }
+  | { type: "active_app"; process: string }
+  | { type: "weekday"; days: number[] }
+  | { type: "time_range"; from: string; to: string }
+  | { type: "module_enabled"; module_id: string; enabled?: boolean }
+  | { type: "active_layout"; layout_id: string }
+  | { type: "internet"; online?: boolean };
 
 export type Action =
-  | { type: "notify"; title: string; body: string }
+  | { type: "open_app"; path: string; args?: string }
+  | { type: "close_app"; process: string; force?: boolean }
+  | { type: "open_url"; url: string }
+  | { type: "open_folder"; path: string }
+  | { type: "open_file"; path: string }
+  | { type: "run_command"; command: string }
+  | { type: "switch_layout"; layout_id?: string; profile?: string }
+  | { type: "set_module"; module_id: string; enabled: boolean }
+  | { type: "notify"; title: string; body?: string }
+  | { type: "copy_text"; text: string }
+  | { type: "paste_text"; text: string }
+  | { type: "screenshot"; folder?: string }
+  | { type: "start_timer"; name: string; kind?: "countdown" | "pomodoro"; minutes?: number }
+  | { type: "focus_mode"; enabled: boolean; minutes?: number }
+  | { type: "delete_files"; folder: string; pattern?: string; older_than_days?: number }
   | { type: "log"; message: string }
   | { type: "show_window" }
   | { type: "hide_window" };
@@ -551,10 +585,18 @@ export type Action =
 export interface Automation {
   id: string;
   name: string;
+  description: string;
   enabled: boolean;
   module_id: string;
   trigger: Trigger;
+  conditions: Condition[];
   actions: Action[];
+  cooldown_secs: number;
+  template: string | null;
+  /** Permissions the actions need. */
+  permissions: string[];
+  /** Dangerous actions: each run is confirmed. */
+  dangerous: string[];
   last_run_at: string | null;
   created_at: string;
   updated_at: string;
@@ -562,11 +604,14 @@ export interface Automation {
 
 export interface AutomationInput {
   name: string;
+  description?: string;
   enabled: boolean;
   /** Owning module; the automation doesn't run while it is off (default "automations"). */
   module_id?: string;
   trigger: Trigger;
+  conditions?: Condition[];
   actions: Action[];
+  cooldown_secs?: number;
 }
 
 export interface AutomationLog {
@@ -574,7 +619,42 @@ export interface AutomationLog {
   automation_id: string;
   status: "ok" | "error" | "skipped";
   message: string;
+  source: string;
+  duration_ms: number;
+  details_json: string;
   created_at: string;
+}
+
+export interface RunReport {
+  status: "ok" | "error" | "skipped" | "pending" | "dry_run";
+  message: string;
+  conditions: { ok: boolean; text: string }[];
+  plan: string[];
+  actions: { action: string; ok: boolean; message: string }[];
+  missing_permissions: string[];
+  dangers: string[];
+}
+
+export interface PendingRun {
+  token: string;
+  automation_id: string;
+  name: string;
+  source: string;
+  dangers: string[];
+  plan: string[];
+}
+
+export interface AutomationTemplate {
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  input: AutomationInput;
+}
+
+export interface FocusState {
+  active: boolean;
+  until: number | null;
 }
 
 export interface Notification {
@@ -708,8 +788,18 @@ export const api = {
   automationsUpdate: (id: string, input: AutomationInput) => call<Automation>("automations_update", { id, input }),
   automationsSetEnabled: (id: string, enabled: boolean) => call<Automation>("automations_set_enabled", { id, enabled }),
   automationsDelete: (id: string) => call<void>("automations_delete", { id }),
-  automationsRunNow: (id: string) => call<void>("automations_run_now", { id }),
+  automationsReorder: (ids: string[]) => call<Automation[]>("automations_reorder", { ids }),
+  automationsRun: (id: string, confirm = false, source: "manual" | "ui_button" = "manual") => call<RunReport>("automations_run", { id, confirm, source }),
+  automationsTest: (input: AutomationInput, id?: string, execute = false, confirm = false) => call<RunReport>("automations_test", { id, input, execute, confirm }),
   automationsLogs: (id?: string, limit = 50) => call<AutomationLog[]>("automations_logs", { id, limit }),
+  automationsPending: () => call<PendingRun[]>("automations_pending"),
+  automationsConfirm: (token: string, approve: boolean) => call<RunReport | null>("automations_confirm", { token, approve }),
+  automationsTemplates: () => call<AutomationTemplate[]>("automations_templates"),
+  automationsInstallTemplate: (key: string) => call<Automation>("automations_install_template", { key }),
+  automationsSchema: () => call<object>("automations_schema"),
+  automationsPick: (kind: "app" | "file" | "folder") => call<string | null>("automations_pick", { kind }),
+  focusModeGet: () => call<FocusState>("focus_mode_get"),
+  focusModeSet: (enabled: boolean, minutes?: number) => call<FocusState>("focus_mode_set", { enabled, minutes }),
 };
 
 export const EVENTS = {
@@ -721,4 +811,7 @@ export const EVENTS = {
   clipboardChanged: "focusdeck://clipboard-changed",
   timersChanged: "focusdeck://timers-changed",
   clipboardPrivate: "focusdeck://clipboard-private",
+  automationConfirm: "focusdeck://automation-confirm",
+  automationRun: "focusdeck://automation-run",
+  focusMode: "focusdeck://focus-mode",
 } as const;
