@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "focusdeck://schemas/automation.json",
+  "title": "FocusDeck automation",
+  "description": "Автоматизация: триггер → условия → действия. Объект, который принимают automations_create / automations_update (AutomationInput). Команды automations_list / automations_create возвращают его вместе с полями только для чтения: id, permissions, dangerous, template, last_run_at, created_at, updated_at.",
+  "type": "object",
+  "required": ["name", "enabled", "trigger", "actions"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "readOnly": true },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "description": { "type": "string", "maxLength": 500, "default": "" },
+    "enabled": { "type": "boolean" },
+    "module_id": {
+      "type": "string",
+      "default": "automations",
+      "description": "Модуль-владелец. Автоматизация не запускается, если он или модуль «Автоматизации» выключен."
+    },
+    "trigger": { "$ref": "#/$defs/trigger" },
+    "conditions": { "type": "array", "maxItems": 10, "items": { "$ref": "#/$defs/condition" }, "default": [], "description": "Все условия должны выполняться." },
+    "actions": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/action" }, "description": "Выполняются по порядку; при ошибке остальные пропускаются." },
+    "cooldown_secs": { "type": "integer", "minimum": 0, "maximum": 604800, "default": 0, "description": "Минимальная пауза между автоматическими запусками." },
+    "permissions": { "type": "array", "items": { "type": "string" }, "readOnly": true, "description": "Разрешения, которые нужны действиям." },
+    "dangerous": { "type": "array", "items": { "type": "string" }, "readOnly": true, "description": "Опасные действия: каждый запуск подтверждается пользователем." },
+    "template": { "type": ["string", "null"], "readOnly": true },
+    "last_run_at": { "type": ["string", "null"], "readOnly": true },
+    "created_at": { "type": "string", "readOnly": true },
+    "updated_at": { "type": "string", "readOnly": true }
+  },
+  "$defs": {
+    "process": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[^\\\\/\"*?]+$", "description": "Имя процесса без пути, например obs64.exe (.exe можно не писать)." },
+    "hhmm": { "type": "string", "pattern": "^([01]?\\d|2[0-3]):[0-5]\\d$" },
+    "days": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 7 }, "description": "ISO-дни недели: 1 = понедельник … 7 = воскресенье." },
+    "path": { "type": "string", "minLength": 1, "maxLength": 1000, "description": "Полный путь; можно начинать с %ПЕРЕМЕННОЙ%, например %USERPROFILE%\\Desktop." },
+    "change": { "type": "string", "enum": ["any", "up", "down"], "default": "any", "description": "up — монитор подключён / сеть появилась; down — наоборот." },
+
+    "trigger": {
+      "type": "object",
+      "required": ["type"],
+      "oneOf": [
+        { "properties": { "type": { "const": "app_start" } }, "description": "Запуск FocusDeck." },
+        { "properties": { "type": { "const": "system_start" }, "within_minutes": { "type": "integer", "minimum": 1, "maximum": 120, "default": 10 } }, "description": "Старт системы: FocusDeck запущен в течение N минут после загрузки Windows." },
+        { "required": ["process"], "properties": { "type": { "const": "process_started" }, "process": { "$ref": "#/$defs/process" } }, "description": "Запуск программы." },
+        { "required": ["process"], "properties": { "type": { "const": "process_stopped" }, "process": { "$ref": "#/$defs/process" } }, "description": "Закрытие программы." },
+        { "properties": { "type": { "const": "window_focus" }, "process": { "type": "string", "default": "" }, "title_contains": { "type": "string", "maxLength": 200, "default": "" } }, "description": "Активное окно: программа и/или часть заголовка (хотя бы одно)." },
+        { "required": ["shortcut"], "properties": { "type": { "const": "hotkey" }, "shortcut": { "type": "string", "examples": ["Ctrl+Alt+W"] } }, "description": "Глобальная горячая клавиша." },
+        { "required": ["time"], "properties": { "type": { "const": "time" }, "time": { "$ref": "#/$defs/hhmm" }, "days": { "$ref": "#/$defs/days", "default": [] } }, "description": "Время суток; пустой days — каждый день." },
+        { "required": ["minutes"], "properties": { "type": { "const": "interval" }, "minutes": { "type": "integer", "minimum": 1, "maximum": 1440 } }, "description": "Каждые N минут." },
+        { "properties": { "type": { "const": "display_change" }, "event": { "$ref": "#/$defs/change" } }, "description": "Подключение/отключение монитора." },
+        { "properties": { "type": { "const": "network_change" }, "event": { "$ref": "#/$defs/change" } }, "description": "Изменение сети (появился/пропал интернет)." },
+        { "properties": { "type": { "const": "manual" } }, "description": "Только ручной запуск." },
+        { "properties": { "type": { "const": "ui_button" }, "label": { "type": "string", "maxLength": 30, "default": "" } }, "description": "Кнопка на странице «Автоматизации» и на обзоре." }
+      ]
+    },
+
+    "condition": {
+      "type": "object",
+      "required": ["type"],
+      "oneOf": [
+        { "required": ["process"], "properties": { "type": { "const": "process_running" }, "process": { "$ref": "#/$defs/process" }, "running": { "type": "boolean", "default": true } } },
+        { "required": ["process"], "properties": { "type": { "const": "active_app" }, "process": { "$ref": "#/$defs/process" } } },
+        { "required": ["days"], "properties": { "type": { "const": "weekday" }, "days": { "$ref": "#/$defs/days", "minItems": 1 } } },
+        { "required": ["from", "to"], "properties": { "type": { "const": "time_range" }, "from": { "$ref": "#/$defs/hhmm" }, "to": { "$ref": "#/$defs/hhmm" } }, "description": "Может переходить через полночь (22:00–06:00)." },
+        { "required": ["module_id"], "properties": { "type": { "const": "module_enabled" }, "module_id": { "type": "string" }, "enabled": { "type": "boolean", "default": true } } },
+        { "required": ["layout_id"], "properties": { "type": { "const": "active_layout" }, "layout_id": { "type": "string" } } },
+        { "properties": { "type": { "const": "internet" }, "online": { "type": "boolean", "default": true } } }
+      ]
+    },
+
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "oneOf": [
+        { "required": ["path"], "properties": { "type": { "const": "open_app" }, "path": { "$ref": "#/$defs/path", "pattern": "(?i)\\.(exe|lnk|url|appref-ms)$" }, "args": { "type": "string", "maxLength": 1000, "default": "" } }, "x-permission": "system.launch_apps" },
+        { "required": ["process"], "properties": { "type": { "const": "close_app" }, "process": { "$ref": "#/$defs/process" }, "force": { "type": "boolean", "default": false } }, "x-dangerous": true, "x-permission": "system.close_apps" },
+        { "required": ["url"], "properties": { "type": { "const": "open_url" }, "url": { "type": "string", "pattern": "^(?i)(https?://|mailto:)\\S+$" } } },
+        { "required": ["path"], "properties": { "type": { "const": "open_folder" }, "path": { "$ref": "#/$defs/path" } } },
+        { "required": ["path"], "properties": { "type": { "const": "open_file" }, "path": { "$ref": "#/$defs/path" } }, "description": "Скрипты и программы (.bat, .ps1, .exe …) — опасное действие, нужен system.launch_apps." },
+        { "required": ["command"], "properties": { "type": { "const": "run_command" }, "command": { "type": "string", "minLength": 1, "maxLength": 2000 } }, "x-dangerous": true, "x-permission": "system.run_commands" },
+        { "properties": { "type": { "const": "switch_layout" }, "layout_id": { "type": "string", "default": "" }, "profile": { "enum": ["", "work", "coding", "streaming", "gaming", "focus", "custom"], "default": "" } }, "description": "По id или первый макет с профилем." },
+        { "required": ["module_id", "enabled"], "properties": { "type": { "const": "set_module" }, "module_id": { "type": "string" }, "enabled": { "type": "boolean" } }, "description": "Критические модули выключать нельзя, модуль «Автоматизации» менять нельзя." },
+        { "required": ["title"], "properties": { "type": { "const": "notify" }, "title": { "type": "string", "minLength": 1, "maxLength": 80 }, "body": { "type": "string", "maxLength": 500, "default": "" } }, "x-permission": "app.notifications" },
+        { "required": ["text"], "properties": { "type": { "const": "copy_text" }, "text": { "type": "string", "minLength": 1, "maxLength": 50000 } } },
+        { "required": ["text"], "properties": { "type": { "const": "paste_text" }, "text": { "type": "string", "minLength": 1, "maxLength": 50000 } }, "x-permission": "system.paste" },
+        { "properties": { "type": { "const": "screenshot" }, "folder": { "type": "string", "default": "", "description": "Пусто — Изображения\\FocusDeck." } } },
+        { "required": ["name"], "properties": { "type": { "const": "start_timer" }, "name": { "type": "string", "minLength": 1, "maxLength": 60 }, "kind": { "enum": ["countdown", "pomodoro"], "default": "countdown" }, "minutes": { "type": "integer", "minimum": 1, "maximum": 600, "default": 25 } } },
+        { "required": ["enabled"], "properties": { "type": { "const": "focus_mode" }, "enabled": { "type": "boolean" }, "minutes": { "type": "integer", "minimum": 0, "maximum": 1440, "default": 0 } }, "description": "Focus Mode: всплывающие уведомления скрыты (кроме таймеров); 0 минут — до выключения." },
+        { "required": ["folder"], "properties": { "type": { "const": "delete_files" }, "folder": { "$ref": "#/$defs/path" }, "pattern": { "type": "string", "default": "*", "pattern": "^[^\\\\/]+$" }, "older_than_days": { "type": "integer", "minimum": 0, "default": 0 } }, "description": "Перемещает файлы в Корзину.", "x-dangerous": true, "x-permission": "files.delete" },
+        { "required": ["message"], "properties": { "type": { "const": "log" }, "message": { "type": "string", "minLength": 1, "maxLength": 500 } } },
+        { "properties": { "type": { "const": "show_window" } } },
+        { "properties": { "type": { "const": "hide_window" } } }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "name": "Morning Setup",
+      "description": "Утренняя подготовка по будням",
+      "enabled": true,
+      "trigger": { "type": "time", "time": "09:00", "days": [1, 2, 3, 4, 5] },
+      "conditions": [ { "type": "internet", "online": true } ],
+      "actions": [
+        { "type": "switch_layout", "profile": "work" },
+        { "type": "open_url", "url": "https://calendar.google.com" },
+        { "type": "notify", "title": "Доброе утро", "body": "Календарь открыт." }
+      ],
+      "cooldown_secs": 3600
+    }
+  ]
+}
