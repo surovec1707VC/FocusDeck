@@ -7,6 +7,7 @@ import Toasts from "./components/Toasts";
 import { EVENTS } from "./lib/api";
 import About from "./pages/About";
 import Automations from "./pages/Automations";
+import ClipboardHub from "./pages/ClipboardHub";
 import ControlCenter from "./pages/ControlCenter";
 import ModuleGate from "./components/ModuleGate";
 import Dashboard from "./pages/Dashboard";
@@ -52,6 +53,7 @@ export default function App() {
               <Route path="/tasks" element={<ModuleGate id="tasks"><Tasks /></ModuleGate>} />
               <Route path="/snippets" element={<ModuleGate id="snippets"><Snippets /></ModuleGate>} />
               <Route path="/timers" element={<ModuleGate id="timers"><Timers /></ModuleGate>} />
+              <Route path="/clipboard" element={<ModuleGate id="clipboard_history"><ClipboardHub /></ModuleGate>} />
               <Route path="/automations" element={<ModuleGate id="automations"><Automations /></ModuleGate>} />
               {/* Always reachable: modules can be switched back on here. */}
               <Route path="/control-center" element={<ControlCenter />} />

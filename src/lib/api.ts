@@ -398,6 +398,79 @@ export interface SnippetImportReport {
   skipped: string[];
 }
 
+export type ClipKind = "text" | "link" | "files" | "image" | "html" | "rtf";
+
+export interface ClipItem {
+  id: number;
+  kind: ClipKind;
+  /** Readable text: the text, a file list or an image summary. */
+  content: string;
+  pinned: boolean;
+  source_app: string;
+  size: number;
+  image_width: number | null;
+  image_height: number | null;
+  files_json: string | null;
+  has_html: boolean;
+  has_rtf: boolean;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export interface ClipFilter {
+  search?: string;
+  kind?: ClipKind;
+  pinned_only?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ClipDetails {
+  text: string | null;
+  html_text: string | null;
+  rtf: string | null;
+  files: string[] | null;
+}
+
+export interface PrivateMode {
+  active: boolean;
+  /** Epoch ms when it turns itself off. */
+  until: number | null;
+}
+
+export interface HubStatus {
+  recording: boolean;
+  permission: boolean;
+  private_mode: PrivateMode;
+  stats: { total: number; pinned: number; bytes: number; by_kind: [ClipKind, number][] };
+}
+
+export type QuickActionKind = "open_app" | "open_url" | "open_folder" | "open_file" | "paste_text" | "copy_text" | "command";
+
+export interface QuickAction {
+  id: string;
+  name: string;
+  kind: QuickActionKind;
+  target: string;
+  hotkey: string | null;
+  position: number;
+  last_run_at: string | null;
+}
+
+export interface QuickActionInput {
+  name: string;
+  kind: QuickActionKind;
+  target: string;
+  hotkey?: string | null;
+}
+
+export interface CommandOutput {
+  code: number | null;
+  stdout: string;
+  stderr: string;
+  timed_out: boolean;
+}
+
 export type TimerPhase = "work" | "short_break" | "long_break";
 
 export interface Timer {
@@ -597,6 +670,24 @@ export const api = {
   snippetsExport: () => call<string | null>("snippets_export"),
   snippetsImport: () => call<SnippetImportReport | null>("snippets_import"),
 
+  // Clipboard Hub (see docs/clipboard-hub.md)
+  clipboardList: (filter?: ClipFilter) => call<{ items: ClipItem[]; total: number }>("clipboard_list", { filter }),
+  clipboardImage: (id: number) => call<string>("clipboard_image", { id }),
+  clipboardDetails: (id: number) => call<ClipDetails>("clipboard_details", { id }),
+  clipboardCopy: (id: number) => call<void>("clipboard_copy", { id }),
+  clipboardPaste: (id: number) => call<void>("clipboard_paste", { id }),
+  clipboardPin: (id: number, pinned: boolean) => call<void>("clipboard_pin", { id, pinned }),
+  clipboardDelete: (id: number) => call<void>("clipboard_delete", { id }),
+  clipboardClear: (includePinned = false) => call<number>("clipboard_clear", { includePinned }),
+  clipboardStatus: () => call<HubStatus>("clipboard_status"),
+  clipboardSetPrivate: (enabled: boolean, minutes?: number) => call<PrivateMode>("clipboard_set_private", { enabled, minutes }),
+  quickActionsList: () => call<QuickAction[]>("quick_actions_list"),
+  quickActionsSave: (input: QuickActionInput, id?: string) => call<QuickAction[]>("quick_actions_save", { id, input }),
+  quickActionsDelete: (id: string) => call<QuickAction[]>("quick_actions_delete", { id }),
+  quickActionsReorder: (id: string, delta: number) => call<QuickAction[]>("quick_actions_reorder", { id, delta }),
+  quickActionsRun: (id: string, confirm = false) => call<{ output: CommandOutput | null }>("quick_actions_run", { id, confirm }),
+  quickActionsPick: (kind: "app" | "file" | "folder") => call<string | null>("quick_actions_pick", { kind }),
+
   // Timers and stopwatches
   timersState: () => call<TimersState>("timers_state"),
   timersSave: (input: TimerInput, id?: string) => call<TimersState>("timers_save", { id, input }),
@@ -629,4 +720,5 @@ export const EVENTS = {
   layoutChanged: "focusdeck://layout-changed",
   clipboardChanged: "focusdeck://clipboard-changed",
   timersChanged: "focusdeck://timers-changed",
+  clipboardPrivate: "focusdeck://clipboard-private",
 } as const;

@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Blocks, Braces, Info, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
+import { Blocks, Braces, ClipboardList, Info, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
 import { t } from "../i18n";
 import { useModules } from "../lib/modules-context";
 
@@ -12,6 +12,7 @@ const ITEMS = [
   { to: "/tasks", label: t.nav.tasks, icon: ListChecks, module: "tasks" },
   { to: "/snippets", label: t.nav.snippets, icon: Braces, module: "snippets" },
   { to: "/timers", label: t.nav.timers, icon: Timer, module: "timers" },
+  { to: "/clipboard", label: t.nav.clipboard, icon: ClipboardList, module: "clipboard_history" },
   { to: "/automations", label: t.nav.automations, icon: Workflow, module: "automations" },
   { to: "/control-center", label: t.nav.controlCenter, icon: SlidersHorizontal },
   { to: "/modules", label: t.nav.modules, icon: Puzzle, module: "module_registry" },
