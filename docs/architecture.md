@@ -13,7 +13,7 @@
 | `db/` | пул SQLite (WAL, foreign keys) и миграции `db/migrations/*.sql`, применяются при каждом старте |
 | `settings/` | типизированные настройки (`AppSettings`), хранятся «ключ → JSON» в таблице `settings` |
 | `permissions/` | разрешения и журнал их изменений; отзыв разрешения выключает функцию |
-| `modules/` | **Module Registry**: `catalog` (36 модулей), `schema` (настройки), `registry` (БД и журнал), `effects` (что происходит при вкл/выкл), `health`, `config` (экспорт/импорт). API — [api.md](api.md) |
+| `modules/` | **Module Registry**: `catalog` (42 модуля), `schema` (настройки), `registry` (БД и журнал), `effects` (что происходит при вкл/выкл), `health`, `config` (экспорт/импорт). API — [api.md](api.md) |
 | `background.rs` | фоновые задачи модулей: запускаются и останавливаются вместе с модулем |
 | `workspace/` | макеты (профили, готовые наборы, дублирование, горячие клавиши) и задачи |
 | `widgets/` | **система виджетов**: `catalog` (14 типов), `grid`, `data` (данные и действия), `system` (CPU/RAM/диски/батарея через Windows API), `clipboard` (история буфера), `weather` (погода с кэшем). API — [widgets.md](widgets.md) |
@@ -23,6 +23,7 @@
 | `automation/` | **Automations**: `types` (триггеры, условия, действия), `engine` (наблюдатель, запуск, подтверждения), `system` (окна, процессы, мониторы, сеть, скриншот, Корзина), `templates` (8 сценариев), `store`. API — [automations.md](automations.md), схема — [automation.schema.json](automation.schema.json) |
 | `organizer/` | **Desktop Organizer**: правила, предпросмотр, перемещение без удаления, журнал и откат. API — [desktop-organizer.md](desktop-organizer.md) |
 | `windows_integration/` | **Windows Integration**: окна, приложения, рабочие столы, звук (Core Audio), яркость, сеть, питание, скриншоты, буфер, уведомления, UI Automation. API — [windows-integration.md](windows-integration.md) |
+| `devtools/` | **Developer Tools**: Git, Project Launcher, Terminal Quick Launcher, API Tester, Regex Tester, JSON/YAML Tools — шесть модулей. API — [developer-tools.md](developer-tools.md) |
 | `safety.rs` | каталог действий, **Safe Mode**, **Action Log** и отмена действий |
 | `focus.rs` | Focus Mode (скрывает всплывающие уведомления) |
 | `hotkeys.rs` | глобальные горячие клавиши: показ/скрытие окна + хоткеи автоматизаций |
@@ -68,7 +69,7 @@
 
 Миграция `0004_productivity.sql` расширяет notes, tasks, snippets и добавляет таймеры, секундомеры и историю. Таблицы connectors и connector_settings пока только схема, без интерфейса. Коннекторы предназначены для локальных интеграций, без облака.
 
-Новая миграция — следующий файл `src-tauri/src/db/migrations/0009_*.sql`. Уже применённые миграции не редактируйте: sqlx проверяет их контрольные суммы.
+Новая миграция — следующий файл `src-tauri/src/db/migrations/0010_*.sql`. Уже применённые миграции не редактируйте: sqlx проверяет их контрольные суммы.
 
 ## Frontend (`src`)
 | Путь | Назначение |
@@ -87,4 +88,4 @@
 Безопасность: CSP разрешает только локальные ресурсы и IPC. Фронтенду выданы лишь права на управление окном (перетаскивание, свернуть, развернуть, закрыть) и `opener` (показать файл в папке). Хоткеи, автозапуск и состояние окна доступны только из Rust.
 
 ## Тесты
-`cd src-tauri && cargo test --lib` — 82 теста, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), ошибки.
+`cd src-tauri && cargo test --lib` — 103 теста, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), ошибки.
