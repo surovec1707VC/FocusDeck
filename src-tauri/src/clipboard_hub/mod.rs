@@ -350,7 +350,19 @@ pub async fn quick_actions_reorder(state: State<'_, AppState>, id: String, delta
 #[tauri::command]
 pub async fn quick_actions_run(app: AppHandle, state: State<'_, AppState>, id: String, confirm: Option<bool>) -> AppResult<actions::RunResult> {
     require(&state)?;
-    actions::run(&app, &id, confirm.unwrap_or(false)).await
+    let name = actions::get(&state.db, &id).await?.name;
+    crate::safety::allowed_in_safe_mode(&state.db, "clipboard.quick_action", &name).await?;
+    let result = actions::run(&app, &id, confirm.unwrap_or(false)).await;
+    if !matches!(result, Err(AppError::ConfirmationRequired(_))) {
+        if let Ok(def) = crate::safety::find("clipboard.quick_action") {
+            let (r, m) = match &result {
+                Ok(_) => ("ok", "выполнено".to_string()),
+                Err(e) => ("error", e.to_string()),
+            };
+            let _ = crate::safety::record(&state.db, def, &name, r, &m, None).await;
+        }
+    }
+    result
 }
 
 #[derive(Debug, Deserialize)]

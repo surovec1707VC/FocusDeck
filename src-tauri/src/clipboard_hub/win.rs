@@ -295,7 +295,7 @@ mod imp {
         if ok { Ok(()) } else { Err("Windows не принял часть данных".into()) }
     }
 
-    fn exe_of_window(hwnd: *mut core::ffi::c_void) -> String {
+    pub fn exe_of_window(hwnd: *mut core::ffi::c_void) -> String {
         if hwnd.is_null() {
             return String::new();
         }

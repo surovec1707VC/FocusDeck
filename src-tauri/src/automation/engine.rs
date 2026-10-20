@@ -511,6 +511,13 @@ pub async fn run(app: &AppHandle, a: &Automation, source: &str, opts: RunOptions
         return Ok(report);
     }
 
+    if let Err(e) = crate::safety::allowed_in_safe_mode(db, "automations.run", &a.name).await {
+        report.status = "skipped".into();
+        report.message = e.to_string();
+        write_log(app, a, source, &report, started).await;
+        return Ok(report);
+    }
+
     if !report.missing_permissions.is_empty() {
         report.status = "error".into();
         report.message = format!("нет разрешений: {}", report.missing_permissions.join(", "));
@@ -535,6 +542,10 @@ pub async fn run(app: &AppHandle, a: &Automation, source: &str, opts: RunOptions
         _ => format!("ошибка в действии {}: {}", report.actions.len(), report.actions.last().map(|r| r.message.as_str()).unwrap_or("")),
     };
     tracing::info!(automation = %a.id, source, status = %report.status, "{}", report.message);
+    if let Ok(def) = crate::safety::find("automations.run") {
+        let result = if report.status == "ok" { "ok" } else { "error" };
+        let _ = crate::safety::record(db, def, &a.name, result, &report.message, None).await;
+    }
     write_log(app, a, source, &report, started).await;
     Ok(report)
 }

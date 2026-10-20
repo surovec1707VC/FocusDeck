@@ -66,6 +66,7 @@ mod tests {
         assert_eq!(
             names,
             [
+                "action_log",
                 "automation_logs",
                 "automations",
                 "calendar_events",

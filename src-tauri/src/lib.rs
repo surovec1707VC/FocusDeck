@@ -17,10 +17,12 @@ mod organizer;
 mod permissions;
 mod plugins;
 mod productivity;
+mod safety;
 mod settings;
 mod state;
 mod tray;
 mod widgets;
+mod windows_integration;
 mod window;
 mod workspace;
 
@@ -133,6 +135,33 @@ pub fn run() {
             permissions::permissions_list,
             permissions::permissions_set,
             permissions::permissions_logs,
+            permissions::permissions_center,
+            permissions::permissions_access_log,
+            safety::safety_actions,
+            safety::safe_mode_get,
+            safety::safe_mode_set,
+            safety::action_log_list,
+            safety::action_log_undo,
+            windows_integration::win_windows,
+            windows_integration::win_active_window,
+            windows_integration::win_window,
+            windows_integration::win_apps,
+            windows_integration::win_launch,
+            windows_integration::win_desktops,
+            windows_integration::win_desktop,
+            windows_integration::win_volume,
+            windows_integration::win_set_volume,
+            windows_integration::win_brightness,
+            windows_integration::win_set_brightness,
+            windows_integration::win_power_plans,
+            windows_integration::win_set_power_plan,
+            windows_integration::win_wifi,
+            windows_integration::win_bluetooth,
+            windows_integration::win_screenshot,
+            windows_integration::win_clipboard_read,
+            windows_integration::win_clipboard_write,
+            windows_integration::win_notify,
+            windows_integration::win_uia_inspect,
             modules::list_modules,
             modules::get_module,
             modules::enable_module,

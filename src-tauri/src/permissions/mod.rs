@@ -19,6 +19,14 @@ pub const PERM_PASTE: &str = "system.paste";
 pub const PERM_RUN_COMMANDS: &str = "system.run_commands";
 pub const PERM_CLOSE_APPS: &str = "system.close_apps";
 pub const PERM_DELETE_FILES: &str = "files.delete";
+pub const PERM_MOVE_FILES: &str = "files.move";
+pub const PERM_CLIPBOARD_WRITE: &str = "clipboard.write";
+pub const PERM_WINDOWS: &str = "windows.manage";
+pub const PERM_KEYBOARD: &str = "input.keyboard";
+pub const PERM_MOUSE: &str = "input.mouse";
+pub const PERM_SCREEN: &str = "screen.capture";
+pub const PERM_SYSTEM_SETTINGS: &str = "system.settings";
+pub const PERM_UI_AUTOMATION: &str = "ui.automation";
 
 struct Definition {
     id: &'static str,
@@ -93,6 +101,54 @@ const DEFINITIONS: &[Definition] = &[
         id: PERM_DELETE_FILES,
         name: "Удаление файлов",
         description: "Автоматизации могут перемещать файлы в Корзину (например, очистка рабочего стола). Каждый запуск подтверждается.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_MOVE_FILES,
+        name: "Перемещение файлов",
+        description: "Desktop Organizer раскладывает файлы рабочего стола по папкам (только перемещение, с журналом и отменой).",
+        granted_by_default: true,
+    },
+    Definition {
+        id: PERM_CLIPBOARD_WRITE,
+        name: "Запись в буфер обмена",
+        description: "Помещать текст в буфер обмена по команде из Windows Integration. Прежнее содержимое можно вернуть отменой.",
+        granted_by_default: true,
+    },
+    Definition {
+        id: PERM_WINDOWS,
+        name: "Управление окнами",
+        description: "Видеть список открытых окон других программ, сворачивать, разворачивать, переключать и закрывать их.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_KEYBOARD,
+        name: "Ввод с клавиатуры",
+        description: "Нажимать сочетания клавиш от имени пользователя (переключение виртуальных рабочих столов Win+Ctrl+←/→).",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_MOUSE,
+        name: "Ввод мышью",
+        description: "Двигать курсор и нажимать кнопки мыши. Сейчас ни одна функция FocusDeck этого не делает.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_SCREEN,
+        name: "Скриншоты",
+        description: "Снимать изображение экрана (Windows Integration, действие автоматизаций «Сделать скриншот»). Снимки сохраняются локально.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_SYSTEM_SETTINGS,
+        name: "Системные настройки",
+        description: "Менять громкость, яркость экрана и схему электропитания. Изменения можно отменить в журнале действий.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_UI_AUTOMATION,
+        name: "UI Automation",
+        description: "Читать структуру интерфейса окон других программ (кнопки, поля, их названия) через Windows UI Automation. Только по явному запросу.",
         granted_by_default: false,
     },
 ];
@@ -210,6 +266,125 @@ pub async fn require(pool: &SqlitePool, id: &str, source: &str) -> AppResult<()>
     Err(AppError::PermissionDenied(format!(
         "«{name}» выключено на странице «Разрешения»"
     )))
+}
+
+/// Groups of the Permissions Center.
+pub fn category(id: &str) -> &'static str {
+    match id {
+        PERM_FS_READ | PERM_DELETE_FILES | PERM_MOVE_FILES => "files",
+        PERM_CLIPBOARD_READ | PERM_CLIPBOARD_WRITE => "clipboard",
+        PERM_WINDOWS | PERM_UI_AUTOMATION => "windows",
+        PERM_KEYBOARD | PERM_PASTE | PERM_GLOBAL_HOTKEYS => "keyboard",
+        PERM_MOUSE => "mouse",
+        PERM_SCREEN => "screen",
+        PERM_LAUNCH_APPS | PERM_RUN_COMMANDS | PERM_CLOSE_APPS | PERM_AUTOSTART => "processes",
+        PERM_NETWORK_WEATHER => "network",
+        PERM_NOTIFICATIONS => "notifications",
+        _ => "system",
+    }
+}
+
+/// Modules that use a permission inside some of their actions (in addition
+/// to the module catalog, which lists the permissions a module needs to work).
+const ACTION_USES: &[(&str, &[&str])] = &[
+    (PERM_LAUNCH_APPS, &["widget_app_launcher", "clipboard_history", "automations", "windows_integration"]),
+    (PERM_PASTE, &["snippets", "clipboard_history", "automations"]),
+    (PERM_RUN_COMMANDS, &["clipboard_history", "automations"]),
+    (PERM_CLOSE_APPS, &["automations"]),
+    (PERM_DELETE_FILES, &["automations"]),
+    (PERM_MOVE_FILES, &["desktop_organizer"]),
+    (PERM_NOTIFICATIONS, &["automations", "timers", "windows_integration"]),
+    (PERM_CLIPBOARD_READ, &["windows_integration"]),
+    (PERM_CLIPBOARD_WRITE, &["windows_integration"]),
+    (PERM_WINDOWS, &["windows_integration"]),
+    (PERM_KEYBOARD, &["windows_integration"]),
+    (PERM_SCREEN, &["windows_integration", "automations"]),
+    (PERM_SYSTEM_SETTINGS, &["windows_integration"]),
+    (PERM_UI_AUTOMATION, &["windows_integration"]),
+];
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ModuleRef {
+    pub id: String,
+    pub name: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PermissionInfo {
+    #[serde(flatten)]
+    pub permission: Permission,
+    pub category: &'static str,
+    pub used_by: Vec<ModuleRef>,
+    /// Uses recorded in the Action Log.
+    pub uses: i64,
+    pub last_used_at: Option<String>,
+    pub denials: i64,
+}
+
+pub async fn center(pool: &SqlitePool) -> AppResult<Vec<PermissionInfo>> {
+    let enabled = crate::modules::registry::enabled_set(pool).await?;
+    let mut out = Vec::new();
+    for p in list(pool).await? {
+        let mut ids: Vec<&str> = crate::modules::catalog::BUILTIN.iter().filter(|m| m.permissions.contains(&p.id.as_str())).map(|m| m.id).collect();
+        for (perm, mods) in ACTION_USES {
+            if *perm == p.id {
+                for m in mods.iter() {
+                    if !ids.contains(m) {
+                        ids.push(m);
+                    }
+                }
+            }
+        }
+        let used_by = ids
+            .into_iter()
+            .filter_map(|id| crate::modules::catalog::find(id))
+            .map(|m| ModuleRef { id: m.id.into(), name: m.name.into(), enabled: enabled.contains(m.id) })
+            .collect();
+        let (uses, last): (i64, Option<String>) = sqlx::query_as("SELECT COUNT(*), MAX(created_at) FROM action_log WHERE permission = ? AND result = 'ok'")
+            .bind(&p.id)
+            .fetch_one(pool)
+            .await?;
+        let (denials,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM permission_logs WHERE permission_id = ? AND action = 'denied'").bind(&p.id).fetch_one(pool).await?;
+        out.push(PermissionInfo { category: category(&p.id), permission: p, used_by, uses, last_used_at: last, denials });
+    }
+    Ok(out)
+}
+
+/// One line of a permission's access log: grants/revocations/denials and uses.
+#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+pub struct AccessEntry {
+    pub created_at: String,
+    /// granted | revoked | denied | used | blocked | error
+    pub kind: String,
+    pub source: String,
+    pub detail: String,
+}
+
+pub async fn access_log(pool: &SqlitePool, id: &str, limit: i64) -> AppResult<Vec<AccessEntry>> {
+    Ok(sqlx::query_as::<_, AccessEntry>(
+        "SELECT created_at, kind, source, detail FROM (
+            SELECT created_at, action AS kind, source, '' AS detail, id * 2 AS ord FROM permission_logs WHERE permission_id = ?1
+            UNION ALL
+            SELECT created_at, CASE result WHEN 'ok' THEN 'used' ELSE result END AS kind, module_id AS source,
+                   action || CASE WHEN target != '' THEN ': ' || target ELSE '' END AS detail, id * 2 + 1 AS ord
+            FROM action_log WHERE permission = ?1
+         ) ORDER BY created_at DESC, ord DESC LIMIT ?2",
+    )
+    .bind(id)
+    .bind(limit.clamp(1, 500))
+    .fetch_all(pool)
+    .await?)
+}
+
+#[tauri::command]
+pub async fn permissions_center(state: State<'_, AppState>) -> AppResult<Vec<PermissionInfo>> {
+    center(&state.db).await
+}
+
+#[tauri::command]
+pub async fn permissions_access_log(state: State<'_, AppState>, id: String, limit: Option<i64>) -> AppResult<Vec<AccessEntry>> {
+    access_log(&state.db, &id, limit.unwrap_or(100)).await
 }
 
 #[tauri::command]

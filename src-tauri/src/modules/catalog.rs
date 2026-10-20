@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use super::types::{Category, ModuleDef};
 use crate::permissions::{
     PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_LAUNCH_APPS,
-    PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS, PERM_PASTE,
+    PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS, PERM_PASTE, PERM_WINDOWS, PERM_MOVE_FILES,
 };
 
 // Critical modules (confirmation required to turn off).
@@ -25,6 +25,7 @@ pub const NOTES: &str = "notes";
 pub const SNIPPETS: &str = "snippets";
 pub const TIMERS: &str = "timers";
 pub const ORGANIZER: &str = "desktop_organizer";
+pub const WINDOWS_INTEGRATION: &str = "windows_integration";
 pub const LOGGING: &str = "logging";
 pub const CLIPBOARD: &str = "clipboard_history";
 pub const FILES: &str = "files";
@@ -349,7 +350,7 @@ pub const BUILTIN: &[ModuleDef] = &[
         enabled_by_default: false,
         critical: false,
         requires_restart: false,
-        permissions: &[],
+        permissions: &[PERM_MOVE_FILES],
         settings_schema: || json!({ "type": "object", "properties": {
             "target_root": { "type": "string", "title": "Корневая папка для сортировки ({root})", "default": "%USERPROFILE%\\Documents\\Desktop Organizer" },
             "exclude_patterns": { "type": "string", "title": "Исключения (маски через запятую)", "default": "*.lnk, *.url, desktop.ini, ~$*, *.crdownload, *.part, *.tmp" },
@@ -390,6 +391,23 @@ pub const BUILTIN: &[ModuleDef] = &[
         critical: false,
         requires_restart: false,
         permissions: &[PERM_GLOBAL_HOTKEYS],
+        settings_schema: no_settings,
+    },
+    ModuleDef {
+        id: WINDOWS_INTEGRATION,
+        name: "Windows Integration",
+        description: "Окна, приложения, рабочие столы, звук, яркость, сеть, питание, скриншоты.",
+        details: "Каждое действие проверяет своё разрешение и Safe Mode и записывается в журнал действий; \
+                  изменения (громкость, яркость, схема питания, состояние окна, буфер обмена) можно \
+                  отменить. Используются Windows API, PowerShell и стандартные утилиты; UI Automation — \
+                  только с отдельным разрешением. Если отключить модуль, все его команды недоступны, \
+                  страница скрыта.",
+        category: Category::WindowsIntegration,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_WINDOWS],
         settings_schema: no_settings,
     },
     ModuleDef {

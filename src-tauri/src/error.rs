@@ -18,6 +18,9 @@ pub enum AppError {
     /// The feature's module is turned off.
     #[error("Модуль «{0}» отключён. Включите его в Центре управления.")]
     ModuleDisabled(String),
+    /// Safe Mode: the action is not in the whitelist.
+    #[error("Safe Mode: {0}")]
+    Blocked(String),
     #[error("Ошибка базы данных: {0}")]
     Db(#[from] sqlx::Error),
     #[error("Ошибка формата данных: {0}")]
@@ -34,6 +37,7 @@ impl AppError {
             Self::PermissionDenied(_) => "permission_denied",
             Self::ConfirmationRequired(_) => "confirmation_required",
             Self::ModuleDisabled(_) => "module_disabled",
+            Self::Blocked(_) => "blocked",
             Self::Db(_) => "database",
             Self::Json(_) => "json",
             Self::Other(_) => "internal",

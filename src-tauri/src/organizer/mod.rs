@@ -95,7 +95,13 @@ pub async fn auto_run(app: &AppHandle, source: &str) -> AppResult<()> {
         return Ok(());
     }
     if s.auto_move {
+        crate::permissions::require(db, crate::permissions::PERM_MOVE_FILES, "desktop_organizer").await?;
+        crate::safety::allowed_in_safe_mode(db, "organizer.move", source).await?;
         let report = mover::apply(db, &desktop(app)?, &plan.items, source).await?;
+        if let Ok(def) = crate::safety::find("organizer.move") {
+            let undo = (report.moved > 0).then(|| serde_json::json!({ "operation_id": report.operation_id }));
+            let _ = crate::safety::record(db, def, source, "ok", &format!("перемещено {}", report.moved), undo).await;
+        }
         if s.notify {
             notify(app, "Рабочий стол упорядочен", &format!("Перемещено файлов: {}. Отменить можно в Desktop Organizer → Журнал.", report.moved)).await;
         }
@@ -183,7 +189,14 @@ pub async fn organizer_apply(app: AppHandle, state: State<'_, AppState>, items: 
         Some(s) if ["schedule", "login", "limit"].contains(&s) => s,
         _ => "manual",
     };
+    let target = format!("файлов: {}", items.len());
+    crate::permissions::require(&state.db, crate::permissions::PERM_MOVE_FILES, "desktop_organizer").await?;
+    crate::safety::allowed_in_safe_mode(&state.db, "organizer.move", &target).await?;
     let report = mover::apply(&state.db, &desktop(&app)?, &items, source).await?;
+    if let Ok(def) = crate::safety::find("organizer.move") {
+        let undo = (report.moved > 0).then(|| serde_json::json!({ "operation_id": report.operation_id }));
+        let _ = crate::safety::record(&state.db, def, &target, if report.failed == 0 { "ok" } else { "error" }, &format!("перемещено {}, ошибок {}", report.moved, report.failed), undo).await;
+    }
     *PENDING.lock().unwrap() = None;
     if settings(&state.db).await?.notify && report.moved > 0 {
         notify(&app, "Рабочий стол упорядочен", &format!("Перемещено файлов: {}", report.moved)).await;

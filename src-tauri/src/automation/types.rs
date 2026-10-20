@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tauri_plugin_global_shortcut::Shortcut;
 
 use crate::error::{AppError, AppResult};
-use crate::permissions::{PERM_CLOSE_APPS, PERM_DELETE_FILES, PERM_LAUNCH_APPS, PERM_NOTIFICATIONS, PERM_PASTE, PERM_RUN_COMMANDS};
+use crate::permissions::{PERM_CLOSE_APPS, PERM_DELETE_FILES, PERM_LAUNCH_APPS, PERM_NOTIFICATIONS, PERM_PASTE, PERM_RUN_COMMANDS, PERM_SCREEN};
 
 pub const MAX_INTERVAL_MINUTES: u32 = 24 * 60;
 pub const MAX_ACTIONS: usize = 20;
@@ -247,6 +247,7 @@ impl Action {
             Self::PasteText { .. } => Some(PERM_PASTE),
             Self::DeleteFiles { .. } => Some(PERM_DELETE_FILES),
             Self::Notify { .. } => Some(PERM_NOTIFICATIONS),
+            Self::Screenshot { .. } => Some(PERM_SCREEN),
             _ => None,
         }
     }
