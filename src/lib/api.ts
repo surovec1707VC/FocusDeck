@@ -1048,6 +1048,17 @@ export const api = {
   apiHistory: (limit = 100) => call<ApiHistoryEntry[]>("api_history", { limit }),
   apiHistoryClear: () => call<void>("api_history_clear"),
 
+  integrationsList: () => call<IntegrationsOverview>("integrations_list"),
+  integrationsSetEnabled: (id: string, enabled: boolean, confirm = false) => call<ConnectorInfo>("integrations_set_enabled", { id, enabled, confirm }),
+  integrationsSetOffline: (enabled: boolean) => call<boolean>("integrations_set_offline", { enabled }),
+  integrationsUpdateSettings: (id: string, settings: Settings) => call<ConnectorInfo>("integrations_update_settings", { id, settings }),
+  integrationsResetSettings: (id: string) => call<ConnectorInfo>("integrations_reset_settings", { id }),
+  integrationsSetPermission: (id: string, permission: string, granted: boolean) => call<ConnectorInfo>("integrations_set_permission", { id, permission, granted }),
+  integrationsSetSecret: (id: string, secret: string) => call<ConnectorInfo>("integrations_set_secret", { id, secret }),
+  integrationsClearSecret: (id: string) => call<ConnectorInfo>("integrations_clear_secret", { id }),
+  integrationsCheck: (id?: string) => call<ConnectorInfo[]>("integrations_check", { id }),
+  integrationsLogs: (id?: string, limit = 200) => call<ConnectorLog[]>("integrations_logs", { id, limit }),
+
   regexList: () => call<SavedRegex[]>("regex_list"),
   regexSave: (input: RegexInput, id?: string) => call<SavedRegex>("regex_save", { id, input }),
   regexDelete: (id: string) => call<void>("regex_delete", { id }),
@@ -1288,4 +1299,54 @@ export interface JsonQueryResult {
   matches: { path: string; value: unknown }[];
   error: JsonError | null;
   in_document: boolean;
+}
+
+// --- Integrations ---
+
+export type ConnectorKind = "local" | "cloud";
+export type AuthType = "none" | "token" | "api_key" | "oauth2" | "password";
+export type ConnectorRisk = "read" | "change" | "dangerous";
+export type ConnectorStatus = "ok" | "warning" | "error" | "not_configured" | "offline" | "disabled" | "unknown";
+
+/** Mirrors src-tauri/src/integrations/manifest.rs (format: docs/integration.schema.json). */
+export interface ConnectorManifest {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  version: string;
+  kind: ConnectorKind;
+  auth: { type: AuthType; label: string; hint: string; optional: boolean };
+  permissions: { id: string; name: string; description: string; risk: ConnectorRisk }[];
+  actions: { id: string; name: string; description: string; permissions: string[] }[];
+  events: { id: string; name: string; description: string }[];
+  settings: SettingsSchema;
+  health: { kind: "none" | "token" | "executable" | "path" | "local_port"; target?: string | null; setting?: string | null };
+  enabled_by_default: boolean;
+  docs_url: string;
+}
+
+export interface ConnectorInfo {
+  manifest: ConnectorManifest;
+  enabled: boolean;
+  granted: string[];
+  has_secret: boolean;
+  settings: Settings;
+  health_status: ConnectorStatus;
+  health_message: string;
+  health_checked_at: string | null;
+}
+
+export interface IntegrationsOverview {
+  offline_mode: boolean;
+  connectors: ConnectorInfo[];
+}
+
+export interface ConnectorLog {
+  id: number;
+  connector_id: string;
+  level: "info" | "warn" | "error";
+  action: string;
+  message: string;
+  created_at: string;
 }

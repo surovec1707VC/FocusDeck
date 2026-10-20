@@ -13,6 +13,7 @@ import ControlCenter from "./pages/ControlCenter";
 import ModuleGate from "./components/ModuleGate";
 import Dashboard from "./pages/Dashboard";
 import DevTools from "./pages/DevTools";
+import Integrations from "./pages/Integrations";
 import Layouts from "./pages/Layouts";
 import Modules from "./pages/Modules";
 import Notes from "./pages/Notes";
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/windows" element={<ModuleGate id="windows_integration"><WindowsIntegration /></ModuleGate>} />
               <Route path="/dev" element={<DevTools />} />
               <Route path="/dev/:tool" element={<DevTools />} />
+              <Route path="/integrations" element={<ModuleGate id="integrations"><Integrations /></ModuleGate>} />
               <Route path="/automations" element={<ModuleGate id="automations"><Automations /></ModuleGate>} />
               {/* Always reachable: modules can be switched back on here. */}
               <Route path="/control-center" element={<ControlCenter />} />

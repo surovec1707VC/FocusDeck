@@ -93,7 +93,7 @@ pub async fn set_enabled(pool: &SqlitePool, id: &str, enabled: bool, confirm: bo
     let m = manifest::get(id)?;
     if enabled && m.kind == Kind::Cloud {
         if offline_mode(pool).await {
-            return Err(AppError::Blocked(format!("включён Offline Mode — облачную интеграцию «{}» нельзя включить", m.name)));
+            return Err(AppError::Offline(format!("Включён Offline Mode — облачную интеграцию «{}» нельзя включить", m.name)));
         }
         if !confirm {
             return Err(AppError::ConfirmationRequired(format!(
@@ -258,7 +258,7 @@ mod tests {
         assert!(store::row(&pool, "vscode").await.unwrap().enabled);
 
         // Cloud: blocked offline, then needs confirmation.
-        assert!(matches!(set_enabled(&pool, "github", true, true).await, Err(AppError::Blocked(_))));
+        assert!(matches!(set_enabled(&pool, "github", true, true).await, Err(AppError::Offline(_))));
         set_offline(&pool, false).await.unwrap();
         assert!(!offline_mode(&pool).await);
         assert!(matches!(set_enabled(&pool, "github", true, false).await, Err(AppError::ConfirmationRequired(_))));

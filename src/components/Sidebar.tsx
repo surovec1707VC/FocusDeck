@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Blocks, Braces, ClipboardList, Code2, FolderTree, Monitor, Info, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
+import { Blocks, Braces, ClipboardList, Code2, FolderTree, Monitor, Info, Plug, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
 import { t } from "../i18n";
 import { useModules } from "../lib/modules-context";
 import { DEV_MODULES } from "../lib/dev-modules";
@@ -18,6 +18,7 @@ const ITEMS: { to: string; label: string; icon: typeof Info; module?: string; an
   { to: "/organizer", label: t.nav.organizer, icon: FolderTree, module: "desktop_organizer" },
   { to: "/windows", label: t.nav.windows, icon: Monitor, module: "windows_integration" },
   { to: "/dev", label: t.nav.dev, icon: Code2, anyOf: DEV_MODULES },
+  { to: "/integrations", label: t.nav.integrations, icon: Plug, module: "integrations" },
   { to: "/automations", label: t.nav.automations, icon: Workflow, module: "automations" },
   { to: "/control-center", label: t.nav.controlCenter, icon: SlidersHorizontal },
   { to: "/modules", label: t.nav.modules, icon: Puzzle, module: "module_registry" },

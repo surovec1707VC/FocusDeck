@@ -21,6 +21,9 @@ pub enum AppError {
     /// Safe Mode: the action is not in the whitelist.
     #[error("Safe Mode: {0}")]
     Blocked(String),
+    /// Offline Mode: cloud integrations are paused.
+    #[error("{0}")]
+    Offline(String),
     #[error("Ошибка базы данных: {0}")]
     Db(#[from] sqlx::Error),
     #[error("Ошибка формата данных: {0}")]
@@ -38,6 +41,7 @@ impl AppError {
             Self::ConfirmationRequired(_) => "confirmation_required",
             Self::ModuleDisabled(_) => "module_disabled",
             Self::Blocked(_) => "blocked",
+            Self::Offline(_) => "offline",
             Self::Db(_) => "database",
             Self::Json(_) => "json",
             Self::Other(_) => "internal",
