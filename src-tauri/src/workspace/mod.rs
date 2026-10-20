@@ -33,14 +33,7 @@ pub struct Layout {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
-pub struct Task {
-    pub id: String,
-    pub title: String,
-    pub done: bool,
-    pub position: i64,
-    pub created_at: String,
-}
+pub use crate::productivity::tasks::Task;
 
 type Preset = (&'static str, &'static str, &'static [(&'static str, i64, i64, i64, i64)]);
 
@@ -283,32 +276,19 @@ pub async fn activate_from_hotkey(app: &AppHandle, id: &str) -> AppResult<()> {
 // --- tasks ---
 
 pub async fn tasks(pool: &SqlitePool) -> AppResult<Vec<Task>> {
-    Ok(sqlx::query_as::<_, Task>("SELECT id, title, done, position, created_at FROM tasks ORDER BY done, position, created_at")
-        .fetch_all(pool)
-        .await?)
+    crate::productivity::tasks::all(pool).await
 }
 
 pub async fn add_task(pool: &SqlitePool, title: &str) -> AppResult<()> {
-    let title = title.trim();
-    if title.is_empty() || title.chars().count() > 200 {
-        return Err(AppError::Invalid("текст задачи должен быть от 1 до 200 символов".into()));
-    }
-    sqlx::query("INSERT INTO tasks (id, title, position) VALUES (?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM tasks))")
-        .bind(new_id())
-        .bind(title)
-        .execute(pool)
-        .await?;
-    Ok(())
+    crate::productivity::tasks::quick_add(pool, title).await.map(|_| ())
 }
 
 pub async fn toggle_task(pool: &SqlitePool, id: &str) -> AppResult<()> {
-    sqlx::query("UPDATE tasks SET done = NOT done, updated_at = datetime('now') WHERE id = ?").bind(id).execute(pool).await?;
-    Ok(())
+    crate::productivity::tasks::toggle(pool, id).await.map(|_| ())
 }
 
 pub async fn delete_task(pool: &SqlitePool, id: &str) -> AppResult<()> {
-    sqlx::query("DELETE FROM tasks WHERE id = ?").bind(id).execute(pool).await?;
-    Ok(())
+    crate::productivity::tasks::delete(pool, id).await
 }
 
 // --- commands: layouts ---

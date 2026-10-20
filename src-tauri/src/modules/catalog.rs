@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use super::types::{Category, ModuleDef};
 use crate::permissions::{
     PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_LAUNCH_APPS,
-    PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS,
+    PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS, PERM_PASTE,
 };
 
 // Critical modules (confirmation required to turn off).
@@ -23,6 +23,7 @@ pub const AUTOMATIONS: &str = "automations";
 pub const TASKS: &str = "tasks";
 pub const NOTES: &str = "notes";
 pub const SNIPPETS: &str = "snippets";
+pub const TIMERS: &str = "timers";
 pub const LOGGING: &str = "logging";
 pub const CLIPBOARD: &str = "clipboard_history";
 pub const FILES: &str = "files";
@@ -47,7 +48,7 @@ pub const WIDGET_COUNTDOWN: &str = "widget_countdown";
 pub const WIDGET_STOPWATCH: &str = "widget_stopwatch";
 
 /// Features that exist only as storage/placeholder so far.
-pub const IN_DEVELOPMENT: &[&str] = &[SNIPPETS, FILES, INTEGRATIONS];
+pub const IN_DEVELOPMENT: &[&str] = &[FILES, INTEGRATIONS];
 
 fn no_settings() -> Value {
     json!({ "type": "object", "properties": {} })
@@ -216,8 +217,9 @@ pub const BUILTIN: &[ModuleDef] = &[
     ModuleDef {
         id: TASKS,
         name: "Задачи",
-        description: "Хранилище задач для виджета «Список дел».",
-        details: "Если отключить, виджеты «Список дел» скрываются. Задачи сохраняются.",
+        description: "Задачи с приоритетами, сроками, статусами, категориями и повторами.",
+        details: "Страница «Задачи», быстрое добавление и статистика. Если отключить, страница и \
+                  виджеты «Список дел» скрываются, повторяющиеся задачи не создаются. Задачи сохраняются.",
         category: Category::Productivity,
         version: "1.0.0",
         enabled_by_default: true,
@@ -225,34 +227,65 @@ pub const BUILTIN: &[ModuleDef] = &[
         requires_restart: false,
         permissions: &[],
         settings_schema: || json!({ "type": "object", "properties": {
-            "hide_completed": { "type": "boolean", "title": "Скрывать выполненные", "default": false }
+            "hide_completed": { "type": "boolean", "title": "Скрывать выполненные", "default": false },
+            "default_priority": { "type": "integer", "title": "Приоритет по умолчанию (0–3)", "default": 0, "minimum": 0, "maximum": 3 },
+            "week_starts": { "type": "string", "title": "Первый день недели", "default": "monday", "enum": ["monday", "sunday"] }
         }}),
     },
     ModuleDef {
         id: NOTES,
         name: "Заметки",
-        description: "Хранилище заметок для виджета «Заметки».",
-        details: "Если отключить, виджеты «Заметки» скрываются. Текст сохраняется.",
+        description: "Заметки в Markdown: теги, поиск, закрепление, корзина, экспорт.",
+        details: "Страница «Заметки». Заметки можно привязать к проекту или макету. Удалённые \
+                  попадают в корзину и очищаются через заданное число дней. Если отключить, страница \
+                  и виджеты «Заметки» скрываются; заметки сохраняются.",
+        category: Category::Productivity,
+        version: "1.1.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "trash_days": { "type": "integer", "title": "Хранить в корзине (дней)", "default": 30, "minimum": 1, "maximum": 365 },
+            "preview": { "type": "boolean", "title": "Показывать предпросмотр Markdown", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: SNIPPETS,
+        name: "Сниппеты",
+        description: "Шаблоны текста с переменными: копирование и вставка.",
+        details: "Страница «Сниппеты»: теги, поиск, переменные {{имя}} и встроенные {{date}}, {{time}}, \
+                  {{datetime}}, импорт и экспорт JSON. «Вставить» копирует текст, прячет окно и нажимает \
+                  Ctrl+V в программе, где вы работали, — для этого нужно разрешение «Вставка текста». \
+                  Если отключить, страница скрывается; сниппеты сохраняются.",
+        category: Category::Productivity,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_PASTE],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "paste_delay_ms": { "type": "integer", "title": "Задержка перед вставкой (мс)", "default": 250, "minimum": 50, "maximum": 2000 }
+        }}),
+    },
+    ModuleDef {
+        id: TIMERS,
+        name: "Таймеры",
+        description: "Таймеры, Pomodoro и секундомеры с историей.",
+        details: "Страница «Таймеры». Фоновая задача раз в секунду завершает истёкшие таймеры, пишет \
+                  сессию в историю и показывает уведомление, даже если окно скрыто. Если отключить, \
+                  фоновая задача останавливается и страница скрывается; таймеры и история сохраняются.",
         category: Category::Productivity,
         version: "1.0.0",
         enabled_by_default: true,
         critical: false,
         requires_restart: false,
         permissions: &[],
-        settings_schema: no_settings,
-    },
-    ModuleDef {
-        id: SNIPPETS,
-        name: "Сниппеты",
-        description: "Шаблоны текста для быстрой вставки.",
-        details: "В разработке: хранилище готово, интерфейса пока нет.",
-        category: Category::Productivity,
-        version: "0.1.0",
-        enabled_by_default: false,
-        critical: false,
-        requires_restart: false,
-        permissions: &[],
-        settings_schema: no_settings,
+        settings_schema: || json!({ "type": "object", "properties": {
+            "notify": { "type": "boolean", "title": "Уведомлять по завершении", "default": true },
+            "auto_start_next": { "type": "boolean", "title": "Pomodoro: сразу начинать следующий интервал", "default": false },
+            "history_days": { "type": "integer", "title": "Хранить историю (дней)", "default": 90, "minimum": 7, "maximum": 3650 }
+        }}),
     },
     ModuleDef {
         id: LOGGING,

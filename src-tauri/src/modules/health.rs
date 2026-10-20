@@ -74,6 +74,14 @@ pub async fn check(app: &AppHandle, id: &str) -> AppResult<(HealthState, String)
                 Ok((HealthState::Error, "фоновая задача не запущена".into()))
             }
         }
+        TIMERS => {
+            if crate::background::running(app, TIMERS) {
+                let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM timers WHERE running = 1").fetch_one(db).await?;
+                ok(format!("фоновая задача работает, запущено таймеров: {n}"))
+            } else {
+                Ok((HealthState::Error, "фоновая задача не запущена".into()))
+            }
+        }
         WIDGET_WEATHER => {
             let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM widget_cache WHERE key LIKE 'weather:%'").fetch_one(db).await?;
             ok(if n > 0 { "прогноз в кэше".into() } else { "прогноз ещё не загружался".into() })

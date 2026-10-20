@@ -15,6 +15,7 @@ pub const PERM_CLIPBOARD_READ: &str = "clipboard.read";
 pub const PERM_FS_READ: &str = "fs.read";
 pub const PERM_NETWORK_WEATHER: &str = "network.weather";
 pub const PERM_LAUNCH_APPS: &str = "system.launch_apps";
+pub const PERM_PASTE: &str = "system.paste";
 
 struct Definition {
     id: &'static str,
@@ -65,6 +66,12 @@ const DEFINITIONS: &[Definition] = &[
         id: PERM_LAUNCH_APPS,
         name: "Запуск программ",
         description: "Открывать программы и ярлыки, которые вы сами добавили в виджет «Запуск программ».",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_PASTE,
+        name: "Вставка текста",
+        description: "По кнопке «Вставить» у сниппета нажимать Ctrl+V в программе, где вы работали.",
         granted_by_default: false,
     },
 ];
