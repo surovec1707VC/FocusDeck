@@ -308,7 +308,7 @@ pub async fn snippets_paste(app: AppHandle, state: State<'_, AppState>, id: Stri
 }
 
 #[cfg(windows)]
-fn paste_keys() {
+pub(crate) fn paste_keys() {
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::{INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, SendInput, VK_CONTROL};
     let key = |vk: u16, up: bool| INPUT {
         r#type: INPUT_KEYBOARD,
@@ -321,7 +321,7 @@ fn paste_keys() {
 }
 
 #[cfg(not(windows))]
-fn paste_keys() {}
+pub(crate) fn paste_keys() {}
 
 #[tauri::command]
 pub async fn snippets_export(app: AppHandle, state: State<'_, AppState>) -> AppResult<Option<String>> {

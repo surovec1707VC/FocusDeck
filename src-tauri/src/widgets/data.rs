@@ -394,7 +394,7 @@ pub async fn act(app: &AppHandle, w: &Widget, action: &str, p: &Value) -> AppRes
             tracing::info!(path, "launching app from widget");
             app.opener().open_path(path, None::<&str>).map_err(anyhow::Error::from)?;
         }
-        ("clipboard", "copy") => clipboard::copy(clipboard::content(db, int(p, "id")?).await?).await?,
+        ("clipboard", "copy") => clipboard::copy_entry(db, int(p, "id")?).await?,
         ("clipboard", "pin") => {
             let pinned = field(p, "pinned")?.as_bool().unwrap_or(true);
             clipboard::set_pinned(db, int(p, "id")?, pinned).await?;

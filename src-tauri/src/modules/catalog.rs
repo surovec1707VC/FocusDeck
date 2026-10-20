@@ -305,22 +305,29 @@ pub const BUILTIN: &[ModuleDef] = &[
     },
     ModuleDef {
         id: CLIPBOARD,
-        name: "История буфера обмена",
-        description: "Локальная история скопированного текста.",
-        details: "Фоновая задача раз в секунду проверяет, изменился ли буфер, и сохраняет текст в \
-                  локальную базу. Нужно разрешение «Чтение буфера обмена». Содержимое, которое \
-                  менеджеры паролей помечают как скрытое, не сохраняется. Если отключить, запись \
-                  прекращается, история сохраняется.",
+        name: "Clipboard Hub",
+        description: "История буфера обмена (текст, ссылки, файлы, изображения, HTML, RTF) и быстрые действия.",
+        details: "Фоновая задача раз в секунду проверяет, изменился ли буфер, и сохраняет его в локальную базу. Нужно разрешение «Чтение буфера обмена». Не записываются: скрытое содержимое менеджеров паролей, копирование из исключённых программ и приватных окон браузера, всё во время Private Mode. Если отключить модуль, запись прекращается, страница, виджет и горячие клавиши модуля отключаются; история и быстрые действия сохраняются.",
         category: Category::Clipboard,
-        version: "1.0.0",
+        version: "2.0.0",
         enabled_by_default: false,
         critical: false,
         requires_restart: false,
         permissions: &[PERM_CLIPBOARD_READ],
         settings_schema: || json!({ "type": "object", "properties": {
-            "max_items": { "type": "integer", "title": "Хранить записей", "default": 200, "minimum": 10, "maximum": 5000 },
-            "max_length": { "type": "integer", "title": "Максимальная длина записи (символов)", "default": 20000, "minimum": 100, "maximum": 100000 },
-            "skip_sensitive": { "type": "boolean", "title": "Не сохранять скрытое содержимое (пароли)", "default": true }
+            "max_items": { "type": "integer", "title": "Максимум записей", "default": 500, "minimum": 10, "maximum": 10000 },
+            "retention_days": { "type": "integer", "title": "Срок хранения, дней (0 — без ограничения)", "default": 30, "minimum": 0, "maximum": 3650 },
+            "persist_history": { "type": "boolean", "title": "Сохранять историю после перезапуска", "default": true },
+            "save_images": { "type": "boolean", "title": "Сохранять изображения", "default": true },
+            "max_image_mb": { "type": "integer", "title": "Максимальный размер изображения, МБ", "default": 10, "minimum": 1, "maximum": 50 },
+            "save_rich": { "type": "boolean", "title": "Сохранять форматирование (HTML, RTF)", "default": true },
+            "max_length": { "type": "integer", "title": "Максимальная длина текста (символов)", "default": 100000, "minimum": 100, "maximum": 1000000 },
+            "excluded_apps": { "type": "string", "title": "Исключённые программы (exe через запятую)", "default": "keepass.exe, keepassxc.exe, 1password.exe, bitwarden.exe" },
+            "exclude_private_windows": { "type": "boolean", "title": "Не записывать из приватных окон браузера", "default": true },
+            "skip_sensitive": { "type": "boolean", "title": "Не сохранять скрытое содержимое (пароли)", "default": true },
+            "open_hotkey": { "type": "string", "title": "Горячая клавиша открытия (пусто — нет)", "default": "Ctrl+Alt+V" },
+            "private_minutes": { "type": "integer", "title": "Private Mode по умолчанию, минут (0 — до выключения)", "default": 15, "minimum": 0, "maximum": 1440 },
+            "command_timeout_secs": { "type": "integer", "title": "Таймаут команды быстрого действия, с", "default": 60, "minimum": 5, "maximum": 600 }
         }}),
     },
     ModuleDef {

@@ -76,6 +76,12 @@ pub async fn apply_settings(app: &AppHandle, id: &str) -> AppResult<()> {
         // New scheduler period.
         crate::background::restart(app, AUTOMATIONS);
     }
+    if id == crate::modules::catalog::CLIPBOARD {
+        // The open-hub shortcut may have changed.
+        if let Err(e) = crate::hotkeys::sync(app).await {
+            registry::log(&state.db, id, "warn", "apply", &e.to_string(), "system").await?;
+        }
+    }
     if registry::def(id)?.requires_restart {
         state.pending_restart.lock().unwrap().insert(id.to_string());
     }

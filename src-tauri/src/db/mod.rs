@@ -79,6 +79,7 @@ mod tests {
                 "notifications",
                 "permission_logs",
                 "permissions",
+                "quick_actions",
                 "settings",
                 "snippets",
                 "stopwatch_results",

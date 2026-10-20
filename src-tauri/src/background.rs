@@ -10,7 +10,7 @@ fn spawn_for(app: &AppHandle, module_id: &str) -> Option<tauri::async_runtime::J
     match module_id {
         AUTOMATIONS => Some(tauri::async_runtime::spawn(crate::automation::engine::scheduler_loop(app.clone()))),
         TIMERS => Some(tauri::async_runtime::spawn(crate::productivity::timers::tick_loop(app.clone()))),
-        CLIPBOARD => Some(tauri::async_runtime::spawn(crate::widgets::clipboard::poll_loop(app.clone()))),
+        CLIPBOARD => Some(tauri::async_runtime::spawn(crate::clipboard_hub::poll_loop(app.clone()))),
         _ => None,
     }
 }

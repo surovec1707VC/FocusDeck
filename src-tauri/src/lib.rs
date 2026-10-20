@@ -4,6 +4,7 @@
 mod automation;
 mod autostart;
 mod background;
+mod clipboard_hub;
 mod db;
 mod error;
 mod hotkeys;
@@ -37,6 +38,7 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
         permissions::seed(&pool).await?;
         registry::seed(&pool).await?;
         workspace::seed(&pool).await?;
+        clipboard_hub::apply_persistence(&pool).await?;
         anyhow::Ok(pool)
     })?;
     let (log_level, log_to_file) = tauri::async_runtime::block_on(async {
@@ -98,6 +100,11 @@ fn on_exit(app: &AppHandle) {
                 }
             }
         });
+    }
+    if state.module_enabled(modules::catalog::CLIPBOARD) {
+        if let Err(e) = tauri::async_runtime::block_on(clipboard_hub::apply_persistence(&state.db)) {
+            tracing::warn!("clipboard history cleanup: {e}");
+        }
     }
     tracing::info!("FocusDeck exiting");
 }
@@ -190,6 +197,22 @@ pub fn run() {
             productivity::timers::stopwatches_save_result,
             productivity::timers::stopwatch_results,
             productivity::timers::stopwatch_results_delete,
+            clipboard_hub::clipboard_list,
+            clipboard_hub::clipboard_image,
+            clipboard_hub::clipboard_details,
+            clipboard_hub::clipboard_copy,
+            clipboard_hub::clipboard_paste,
+            clipboard_hub::clipboard_pin,
+            clipboard_hub::clipboard_delete,
+            clipboard_hub::clipboard_clear,
+            clipboard_hub::clipboard_status,
+            clipboard_hub::clipboard_set_private,
+            clipboard_hub::quick_actions_list,
+            clipboard_hub::quick_actions_save,
+            clipboard_hub::quick_actions_delete,
+            clipboard_hub::quick_actions_reorder,
+            clipboard_hub::quick_actions_run,
+            clipboard_hub::quick_actions_pick,
             workspace::tasks_list,
             workspace::tasks_add,
             workspace::tasks_toggle,

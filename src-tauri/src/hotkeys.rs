@@ -2,7 +2,8 @@
 //! automations. Nothing is registered unless the «Глобальные горячие
 //! клавиши» module, the setting and the permission are all on. Automation
 //! shortcuts also need the Automations module and the automation's own module;
-//! layout shortcuts need the Layouts module.
+//! layout shortcuts need the Layouts module; Clipboard Hub shortcuts (open
+//! the hub, quick actions) need the Clipboard Hub module.
 
 use std::str::FromStr;
 
@@ -11,7 +12,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, S
 
 use crate::automation::{engine, store, types::Trigger};
 use crate::error::{AppError, AppResult};
-use crate::modules::catalog::{AUTOMATIONS, HOTKEYS, LAYOUTS};
+use crate::modules::catalog::{AUTOMATIONS, CLIPBOARD, HOTKEYS, LAYOUTS};
 use crate::modules::registry;
 use crate::permissions::{self, PERM_GLOBAL_HOTKEYS};
 use crate::state::AppState;
@@ -21,6 +22,9 @@ pub enum HotkeyTarget {
     ToggleWindow,
     Automation(String),
     Layout(String),
+    /// Show the window on the Clipboard Hub page.
+    ClipboardHub,
+    QuickAction(String),
 }
 
 /// Called by the global-shortcut plugin for every registered shortcut.
@@ -36,6 +40,19 @@ pub fn handle(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = engine::run_by_id(&app, &id).await {
                     tracing::warn!("hotkey automation {id}: {e}");
+                }
+            });
+        }
+        Some(HotkeyTarget::ClipboardHub) => {
+            crate::window::show(app);
+            let _ = tauri::Emitter::emit(app, crate::tray::NAVIGATE_EVENT, "/clipboard");
+        }
+        Some(HotkeyTarget::QuickAction(id)) => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = crate::clipboard_hub::actions::run(&app, &id, false).await {
+                    tracing::warn!("hotkey quick action {id}: {e}");
+                    let _ = crate::notifications::push(&app, "error", "Быстрое действие не выполнено", &e.to_string(), "Clipboard Hub").await;
                 }
             });
         }
@@ -117,6 +134,33 @@ pub async fn sync(app: &AppHandle) -> AppResult<()> {
             }
         }
     }
+    if registry::is_enabled(&state.db, CLIPBOARD).await? {
+        let open = registry::settings(&state.db, CLIPBOARD).await?;
+        if let Some(h) = open.get("open_hotkey").and_then(serde_json::Value::as_str).filter(|h| !h.trim().is_empty()) {
+            if let Err(e) = register(h, HotkeyTarget::ClipboardHub) {
+                tracing::warn!("clipboard hub hotkey: {e}");
+            }
+        }
+        for a in crate::clipboard_hub::actions::list(&state.db).await?.into_iter().filter(|a| a.kind != "command") {
+            let Some(shortcut) = &a.hotkey else { continue };
+            if let Err(e) = register(shortcut, HotkeyTarget::QuickAction(a.id.clone())) {
+                tracing::warn!(action = %a.name, "{e}");
+            }
+        }
+    }
     tracing::info!(count = state.hotkeys.lock().unwrap().len(), "global hotkeys registered");
+    Ok(())
+}
+
+/// Re-registers everything and fails if `expected` could not be registered
+/// (taken by another program or already used in FocusDeck) while hotkeys are on.
+pub async fn sync_reporting(app: &AppHandle, expected: Option<HotkeyTarget>) -> AppResult<()> {
+    if let Err(e) = sync(app).await {
+        tracing::warn!("{e}");
+    }
+    let Some(target) = expected else { return Ok(()) };
+    if active(app).await? && !app.state::<AppState>().hotkeys.lock().unwrap().values().any(|t| *t == target) {
+        return Err(AppError::Invalid("сочетание не удалось назначить: оно занято другой программой или уже используется в FocusDeck".into()));
+    }
     Ok(())
 }

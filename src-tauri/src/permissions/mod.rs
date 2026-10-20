@@ -16,6 +16,7 @@ pub const PERM_FS_READ: &str = "fs.read";
 pub const PERM_NETWORK_WEATHER: &str = "network.weather";
 pub const PERM_LAUNCH_APPS: &str = "system.launch_apps";
 pub const PERM_PASTE: &str = "system.paste";
+pub const PERM_RUN_COMMANDS: &str = "system.run_commands";
 
 struct Definition {
     id: &'static str,
@@ -46,7 +47,7 @@ const DEFINITIONS: &[Definition] = &[
     Definition {
         id: PERM_CLIPBOARD_READ,
         name: "Чтение буфера обмена",
-        description: "Читать скопированный текст для модуля «История буфера обмена». Хранится только локально.",
+        description: "Читать буфер обмена для модуля Clipboard Hub (текст, ссылки, файлы, изображения, HTML, RTF). Хранится только локально.",
         granted_by_default: false,
     },
     Definition {
@@ -71,7 +72,13 @@ const DEFINITIONS: &[Definition] = &[
     Definition {
         id: PERM_PASTE,
         name: "Вставка текста",
-        description: "По кнопке «Вставить» у сниппета нажимать Ctrl+V в программе, где вы работали.",
+        description: "По кнопке «Вставить» (сниппеты, история буфера, быстрые действия) нажимать Ctrl+V в программе, где вы работали.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_RUN_COMMANDS,
+        name: "Выполнение команд",
+        description: "Запускать команды терминала из быстрых действий. Каждый запуск подтверждается отдельно.",
         granted_by_default: false,
     },
 ];
