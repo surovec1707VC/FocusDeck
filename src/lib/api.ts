@@ -72,6 +72,66 @@ export interface Permission {
   updated_at: string;
 }
 
+export type PermissionCategory = "files" | "clipboard" | "windows" | "keyboard" | "mouse" | "screen" | "processes" | "network" | "notifications" | "system";
+
+export interface PermissionInfo extends Permission {
+  category: PermissionCategory;
+  used_by: { id: string; name: string; enabled: boolean }[];
+  uses: number;
+  last_used_at: string | null;
+  denials: number;
+}
+
+export interface AccessEntry {
+  created_at: string;
+  kind: "granted" | "revoked" | "denied" | "used" | "blocked" | "error" | "cancelled" | "undone";
+  source: string;
+  detail: string;
+}
+
+export type Risk = "read" | "change" | "dangerous";
+
+export interface SafetyAction {
+  id: string;
+  name: string;
+  module: string;
+  permission: string | null;
+  risk: Risk;
+  undoable: boolean;
+}
+
+export interface SafeMode {
+  enabled: boolean;
+  whitelist: string[];
+}
+
+export interface ActionLogEntry {
+  id: number;
+  created_at: string;
+  module_id: string;
+  action: string;
+  target: string;
+  result: "ok" | "error" | "denied" | "blocked" | "cancelled" | "undone";
+  message: string;
+  permission: string | null;
+  can_undo: boolean;
+  undone_at: string | null;
+}
+
+export interface WindowInfo {
+  hwnd: number;
+  title: string;
+  process: string;
+  minimized: boolean;
+  maximized: boolean;
+  active: boolean;
+}
+
+export interface InstalledApp {
+  name: string;
+  app_id: string;
+}
+
 export interface PermissionLog {
   id: number;
   permission_id: string;
@@ -763,6 +823,37 @@ export const api = {
   permissionsList: () => call<Permission[]>("permissions_list"),
   permissionsSet: (id: string, granted: boolean) => call<Permission[]>("permissions_set", { id, granted }),
   permissionsLogs: (limit = 50) => call<PermissionLog[]>("permissions_logs", { limit }),
+  permissionsCenter: () => call<PermissionInfo[]>("permissions_center"),
+  permissionsAccessLog: (id: string, limit = 100) => call<AccessEntry[]>("permissions_access_log", { id, limit }),
+
+  // Safety: Safe Mode and the Action Log (see docs/windows-integration.md)
+  safetyActions: () => call<SafetyAction[]>("safety_actions"),
+  safeModeGet: () => call<SafeMode>("safe_mode_get"),
+  safeModeSet: (mode: SafeMode) => call<SafeMode>("safe_mode_set", { mode }),
+  actionLogList: (module?: string, limit = 200) => call<ActionLogEntry[]>("action_log_list", { module, limit }),
+  actionLogUndo: (id: number) => call<string>("action_log_undo", { id }),
+
+  // Windows Integration
+  winWindows: () => call<WindowInfo[]>("win_windows"),
+  winActiveWindow: () => call<WindowInfo | null>("win_active_window"),
+  winWindow: (hwnd: number, action: "focus" | "minimize" | "maximize" | "restore" | "close", confirm = false) => call<void>("win_window", { hwnd, action, confirm }),
+  winApps: (query?: string, refresh = false) => call<InstalledApp[]>("win_apps", { query, refresh }),
+  winLaunch: (appId: string, confirm = false) => call<void>("win_launch", { appId, confirm }),
+  winDesktops: () => call<{ count: number; current: number | null }>("win_desktops"),
+  winDesktop: (action: "next" | "previous" | "new" | "close", confirm = false) => call<void>("win_desktop", { action, confirm }),
+  winVolume: () => call<{ level: number; muted: boolean }>("win_volume"),
+  winSetVolume: (level?: number, muted?: boolean, confirm = false) => call<{ level: number; muted: boolean }>("win_set_volume", { level, muted, confirm }),
+  winBrightness: () => call<number | null>("win_brightness"),
+  winSetBrightness: (level: number, confirm = false) => call<void>("win_set_brightness", { level, confirm }),
+  winPowerPlans: () => call<{ guid: string; name: string; active: boolean }[]>("win_power_plans"),
+  winSetPowerPlan: (guid: string, confirm = false) => call<{ guid: string; name: string; active: boolean }[]>("win_set_power_plan", { guid, confirm }),
+  winWifi: () => call<{ available: boolean; connected: boolean; adapter: string; ssid: string | null; signal: number | null }>("win_wifi"),
+  winBluetooth: () => call<{ available: boolean; enabled: boolean; adapter: string; devices: string[] }>("win_bluetooth"),
+  winScreenshot: (copy = false) => call<{ path: string; copied: boolean }>("win_screenshot", { copy }),
+  winClipboardRead: () => call<string | null>("win_clipboard_read"),
+  winClipboardWrite: (text: string, confirm = false) => call<void>("win_clipboard_write", { text, confirm }),
+  winNotify: (title: string, body: string, native: boolean) => call<void>("win_notify", { title, body, native }),
+  winUiaInspect: (hwnd: number) => call<{ depth: number; name: string; control_type: string; automation_id: string }[]>("win_uia_inspect", { hwnd }),
 
   // Module Registry (see docs/api.md)
   listModules: () => call<ModuleInfo[]>("list_modules"),
@@ -923,4 +1014,5 @@ export const EVENTS = {
   automationRun: "focusdeck://automation-run",
   focusMode: "focusdeck://focus-mode",
   organizerChanged: "focusdeck://organizer-changed",
+  actionLog: "focusdeck://action-log",
 } as const;

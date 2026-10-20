@@ -22,6 +22,7 @@ import Timers from "./pages/Timers";
 import Permissions from "./pages/Permissions";
 import Settings from "./pages/Settings";
 import Widgets from "./pages/Widgets";
+import WindowsIntegration from "./pages/WindowsIntegration";
 
 export default function App() {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ export default function App() {
               <Route path="/timers" element={<ModuleGate id="timers"><Timers /></ModuleGate>} />
               <Route path="/clipboard" element={<ModuleGate id="clipboard_history"><ClipboardHub /></ModuleGate>} />
               <Route path="/organizer" element={<ModuleGate id="desktop_organizer"><Organizer /></ModuleGate>} />
+              <Route path="/windows" element={<ModuleGate id="windows_integration"><WindowsIntegration /></ModuleGate>} />
               <Route path="/automations" element={<ModuleGate id="automations"><Automations /></ModuleGate>} />
               {/* Always reachable: modules can be switched back on here. */}
               <Route path="/control-center" element={<ControlCenter />} />
