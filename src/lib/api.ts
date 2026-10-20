@@ -259,7 +259,8 @@ export type WidgetKind =
   | "clipboard"
   | "notifications"
   | "weather"
-  | "status";
+  | "status"
+  | "git";
 
 export type WidgetCategory = "time" | "productivity" | "system" | "information";
 export type DataSource = "local" | "database" | "config" | "system" | "clipboard" | "network";
@@ -999,6 +1000,60 @@ export const api = {
   automationsPick: (kind: "app" | "file" | "folder") => call<string | null>("automations_pick", { kind }),
   focusModeGet: () => call<FocusState>("focus_mode_get"),
   focusModeSet: (enabled: boolean, minutes?: number) => call<FocusState>("focus_mode_set", { enabled, minutes }),
+
+  // Developer Tools (see docs/developer-tools.md)
+  devPickFolder: (title?: string) => call<string | null>("devtools_pick_folder", { title }),
+  gitRepos: () => call<GitRepo[]>("git_repos"),
+  gitOpenRepo: (path: string) => call<GitRepo>("git_open_repo", { path }),
+  gitForgetRepo: (path: string) => call<void>("git_forget_repo", { path }),
+  gitStatus: (repo: string) => call<GitStatus>("git_status", { repo }),
+  gitLog: (repo: string, limit?: number) => call<GitCommit[]>("git_log", { repo, limit }),
+  gitDiff: (repo: string, opts: { path?: string; staged?: boolean; untracked?: boolean; commit?: string }) => call<GitDiff>("git_diff", { repo, ...opts }),
+  gitStage: (repo: string, paths: string[], stage: boolean, confirm = false) => call<GitStatus>("git_stage", { repo, paths, stage, confirm }),
+  gitCommit: (repo: string, message: string, confirm = false) => call<GitCommit>("git_commit", { repo, message, confirm }),
+  gitPull: (repo: string, confirm = false) => call<GitSync>("git_pull", { repo, confirm }),
+  gitPush: (repo: string, confirm = false) => call<GitSync>("git_push", { repo, confirm }),
+
+  projectsList: () => call<Project[]>("projects_list"),
+  projectsAdd: (path: string) => call<Project>("projects_add", { path }),
+  projectsScan: (dir: string) => call<ProjectCandidate[]>("projects_scan", { dir }),
+  projectsUpdate: (id: string, update: { name?: string; kind?: string; commands?: ProjectCommand[]; favorite?: boolean }) => call<Project>("projects_update", { id, update }),
+  projectsRedetect: (id: string) => call<Project>("projects_redetect", { id }),
+  projectsRemove: (id: string) => call<void>("projects_remove", { id }),
+  projectsOpen: (id: string, target: "editor" | "terminal" | "explorer", shell?: ShellId, confirm = false) => call<void>("projects_open", { id, target, shell, confirm }),
+  projectsRun: (id: string, index: number, shell?: ShellId, confirm = false) => call<void>("projects_run", { id, index, shell, confirm }),
+
+  terminalShells: () => call<ShellInfo[]>("terminal_shells"),
+  terminalHome: () => call<string>("terminal_home"),
+  terminalOpen: (shell: ShellId, cwd: string, command?: string, confirm = false) => call<void>("terminal_open", { shell, cwd, command, confirm }),
+  terminalRun: (runId: string, shell: ShellId, cwd: string, command: string, confirm = false) => call<TabRun>("terminal_run", { runId, shell, cwd, command, confirm }),
+  terminalCancel: (runId: string) => call<boolean>("terminal_cancel", { runId }),
+  terminalHistory: (query?: string, limit = 200) => call<TerminalHistoryEntry[]>("terminal_history", { query, limit }),
+  terminalHistoryClear: () => call<void>("terminal_history_clear"),
+  terminalFavorites: () => call<TerminalFavorite[]>("terminal_favorites"),
+  terminalFavoriteSave: (input: { name: string; shell: ShellId; command: string; cwd?: string | null }, id?: string) => call<TerminalFavorite>("terminal_favorite_save", { id, input }),
+  terminalFavoriteDelete: (id: string) => call<void>("terminal_favorite_delete", { id }),
+
+  apiSend: (request: ApiRequestSpec, confirm = false) => call<ApiResponse>("api_send", { request, confirm }),
+  apiToCurl: (request: ApiRequestSpec, style: "bash" | "cmd" | "powershell") => call<string>("api_to_curl", { request, style }),
+  apiWorkspace: () => call<ApiWorkspace>("api_workspace"),
+  apiCollectionSave: (name: string, id?: string) => call<string>("api_collection_save", { id, name }),
+  apiCollectionDelete: (id: string) => call<void>("api_collection_delete", { id }),
+  apiRequestSave: (input: ApiRequestSpec & { name: string; collection_id: string | null }, id?: string) => call<ApiSavedRequest>("api_request_save", { id, input }),
+  apiRequestDelete: (id: string) => call<void>("api_request_delete", { id }),
+  apiEnvironments: () => call<ApiEnvironment[]>("api_environments"),
+  apiEnvironmentSave: (name: string, vars: ApiPair[], id?: string) => call<ApiEnvironment>("api_environment_save", { id, name, vars }),
+  apiEnvironmentDelete: (id: string) => call<void>("api_environment_delete", { id }),
+  apiEnvironmentActivate: (id: string | null) => call<void>("api_environment_activate", { id }),
+  apiHistory: (limit = 100) => call<ApiHistoryEntry[]>("api_history", { limit }),
+  apiHistoryClear: () => call<void>("api_history_clear"),
+
+  regexList: () => call<SavedRegex[]>("regex_list"),
+  regexSave: (input: RegexInput, id?: string) => call<SavedRegex>("regex_save", { id, input }),
+  regexDelete: (id: string) => call<void>("regex_delete", { id }),
+
+  devjsonProcess: (text: string, op: JsonOp, from?: "json" | "yaml") => call<JsonProcessed>("devjson_process", { text, from, op }),
+  devjsonQuery: (text: string, path: string, from?: "json" | "yaml") => call<JsonQueryResult>("devjson_query", { text, from, path }),
 };
 
 export const EVENTS = {
@@ -1015,4 +1070,222 @@ export const EVENTS = {
   focusMode: "focusdeck://focus-mode",
   organizerChanged: "focusdeck://organizer-changed",
   actionLog: "focusdeck://action-log",
+  terminalOutput: "focusdeck://terminal-output",
 } as const;
+
+// --- Developer Tools ---
+
+export interface GitRepo {
+  path: string;
+  name: string;
+  last_opened_at: string;
+}
+
+export interface GitFileChange {
+  path: string;
+  orig_path: string | null;
+  /** M A D R C T U ? */
+  status: string;
+}
+
+export interface GitStatus {
+  root: string;
+  branch: string | null;
+  upstream: string | null;
+  ahead: number;
+  behind: number;
+  detached: boolean;
+  no_commits: boolean;
+  staged: GitFileChange[];
+  unstaged: GitFileChange[];
+  untracked: GitFileChange[];
+  conflicted: GitFileChange[];
+  clean: boolean;
+}
+
+export interface GitCommit {
+  hash: string;
+  short: string;
+  author: string;
+  email: string;
+  date: string;
+  refs: string;
+  subject: string;
+}
+
+export interface GitDiff {
+  text: string;
+  truncated: boolean;
+}
+
+export interface GitSync {
+  output: string;
+  status: GitStatus;
+}
+
+export type ShellId = "powershell" | "cmd" | "git_bash" | "wsl" | "custom";
+
+export interface ShellInfo {
+  id: ShellId;
+  name: string;
+  path: string | null;
+  available: boolean;
+}
+
+export interface ProjectCommand {
+  name: string;
+  command: string;
+  custom: boolean;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  path: string;
+  kind: string;
+  commands: ProjectCommand[];
+  favorite: boolean;
+  position: number;
+  last_opened_at: string | null;
+  exists: boolean;
+  is_git: boolean;
+}
+
+export interface ProjectCandidate {
+  path: string;
+  name: string;
+  kind: string;
+  added: boolean;
+}
+
+export interface TabRun {
+  run_id: string;
+  code: number | null;
+  timed_out: boolean;
+  cancelled: boolean;
+  duration_ms: number;
+  cwd: string;
+}
+
+export interface TerminalOutput {
+  run_id: string;
+  stream: "stdout" | "stderr";
+  text: string;
+}
+
+export interface TerminalHistoryEntry {
+  id: number;
+  shell: ShellId;
+  cwd: string;
+  command: string;
+  exit_code: number | null;
+  duration_ms: number;
+  created_at: string;
+}
+
+export interface TerminalFavorite {
+  id: string;
+  name: string;
+  shell: ShellId;
+  command: string;
+  cwd: string | null;
+  position: number;
+}
+
+export interface ApiPair {
+  name: string;
+  value: string;
+  enabled: boolean;
+}
+
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+export type BodyType = "none" | "json" | "text" | "form";
+
+export interface ApiRequestSpec {
+  method: HttpMethod;
+  url: string;
+  headers: ApiPair[];
+  query: ApiPair[];
+  body: string;
+  body_type: BodyType;
+}
+
+export interface ApiSavedRequest extends ApiRequestSpec {
+  id: string;
+  collection_id: string | null;
+  name: string;
+  position: number;
+  updated_at: string;
+}
+
+export interface ApiWorkspace {
+  collections: { id: string; name: string; requests: ApiSavedRequest[] }[];
+  loose: ApiSavedRequest[];
+}
+
+export interface ApiEnvironment {
+  id: string;
+  name: string;
+  vars: ApiPair[];
+  active: boolean;
+}
+
+export interface ApiResponse {
+  status: number;
+  status_text: string;
+  headers: [string, string][];
+  body: string;
+  binary: boolean;
+  size: number;
+  truncated: boolean;
+  duration_ms: number;
+  final_url: string;
+  missing_vars: string[];
+}
+
+export interface ApiHistoryEntry {
+  id: number;
+  method: HttpMethod;
+  url: string;
+  status: number | null;
+  duration_ms: number;
+  size: number;
+  error: string | null;
+  request: ApiRequestSpec;
+  created_at: string;
+}
+
+export interface RegexInput {
+  name: string;
+  pattern: string;
+  flags: string;
+  sample: string;
+  replacement: string;
+}
+
+export interface SavedRegex extends RegexInput {
+  id: string;
+  updated_at: string;
+}
+
+export type JsonOp = "format" | "minify" | "validate" | "to_json" | "to_yaml";
+
+export interface JsonError {
+  message: string;
+  line: number | null;
+  column: number | null;
+}
+
+export interface JsonProcessed {
+  ok: boolean;
+  output: string;
+  detected: "json" | "yaml";
+  error: JsonError | null;
+  stats: { objects: number; arrays: number; values: number; depth: number } | null;
+}
+
+export interface JsonQueryResult {
+  matches: { path: string; value: unknown }[];
+  error: JsonError | null;
+  in_document: boolean;
+}

@@ -1,10 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { Blocks, Braces, ClipboardList, FolderTree, Monitor, Info, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
+import { Blocks, Braces, ClipboardList, Code2, FolderTree, Monitor, Info, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
 import { t } from "../i18n";
 import { useModules } from "../lib/modules-context";
+import { DEV_MODULES } from "../lib/dev-modules";
 
-/** `module`: the page is hidden from the menu while that module is off. */
-const ITEMS = [
+/** `module`: the page is hidden from the menu while that module is off;
+ *  `anyOf`: shown while at least one of these modules is on. */
+const ITEMS: { to: string; label: string; icon: typeof Info; module?: string; anyOf?: string[] }[] = [
   { to: "/", label: t.nav.dashboard, icon: LayoutDashboard, module: "dashboard" },
   { to: "/widgets", label: t.nav.widgets, icon: LayoutGrid, module: "widgets" },
   { to: "/layouts", label: t.nav.layouts, icon: Blocks, module: "layouts" },
@@ -15,6 +17,7 @@ const ITEMS = [
   { to: "/clipboard", label: t.nav.clipboard, icon: ClipboardList, module: "clipboard_history" },
   { to: "/organizer", label: t.nav.organizer, icon: FolderTree, module: "desktop_organizer" },
   { to: "/windows", label: t.nav.windows, icon: Monitor, module: "windows_integration" },
+  { to: "/dev", label: t.nav.dev, icon: Code2, anyOf: DEV_MODULES },
   { to: "/automations", label: t.nav.automations, icon: Workflow, module: "automations" },
   { to: "/control-center", label: t.nav.controlCenter, icon: SlidersHorizontal },
   { to: "/modules", label: t.nav.modules, icon: Puzzle, module: "module_registry" },
@@ -28,7 +31,7 @@ export default function Sidebar() {
   const { isEnabled } = useModules();
   return (
     <nav aria-label="Основная навигация" className="flex w-14 shrink-0 flex-col gap-1 border-r border-zinc-200/70 p-2 lg:w-52 dark:border-zinc-800/70">
-      {ITEMS.filter((item) => !item.module || isEnabled(item.module)).map(({ to, label, icon: Icon }) => (
+      {ITEMS.filter((item) => (!item.module || isEnabled(item.module)) && (!item.anyOf || item.anyOf.some(isEnabled))).map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
