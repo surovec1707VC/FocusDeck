@@ -471,6 +471,94 @@ export interface CommandOutput {
   timed_out: boolean;
 }
 
+export type FileCategory = "screenshots" | "images" | "documents" | "archives" | "installers" | "video" | "music" | "code" | "other";
+
+export interface OrganizerMatch {
+  categories?: FileCategory[];
+  extensions?: string[];
+  name_pattern?: string;
+  older_than_days?: number | null;
+  newer_than_days?: number | null;
+  min_size_kb?: number | null;
+  max_size_kb?: number | null;
+}
+
+export interface OrganizerRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  position: number;
+  match: OrganizerMatch;
+  /** Folder template: {root} {category} {ext} {year} {month} {day} */
+  target: string;
+  builtin: string | null;
+}
+
+export interface OrganizerRuleInput {
+  name: string;
+  enabled: boolean;
+  match: OrganizerMatch;
+  target: string;
+}
+
+export interface PlanItem {
+  path: string;
+  name: string;
+  size: number;
+  modified: string;
+  category: FileCategory;
+  rule_id: string;
+  rule_name: string;
+  target_dir: string;
+}
+
+export interface OrganizerPlan {
+  desktop: string;
+  desktop_files: number;
+  items: PlanItem[];
+  skipped: { name: string; reason: string }[];
+  targets: [string, number][];
+}
+
+export interface OrganizerOperation {
+  id: string;
+  source: string;
+  status: "done" | "partial" | "undone" | "partially_undone";
+  moved_count: number;
+  failed_count: number;
+  summary: string;
+  created_at: string;
+  undone_at: string | null;
+}
+
+export interface OrganizerMove {
+  id: number;
+  operation_id: string;
+  original_path: string;
+  new_path: string;
+  rule_name: string;
+  size: number;
+  status: "moved" | "failed" | "undone" | "undo_failed";
+  error: string;
+  moved_at: string;
+  undone_at: string | null;
+  restored_path: string | null;
+}
+
+export interface ApplyReport {
+  operation_id: string;
+  moved: number;
+  failed: number;
+  errors: string[];
+}
+
+export interface UndoReport {
+  restored: number;
+  failed: number;
+  renamed: number;
+  errors: string[];
+}
+
 export type TimerPhase = "work" | "short_break" | "long_break";
 
 export interface Timer {
@@ -768,6 +856,26 @@ export const api = {
   quickActionsRun: (id: string, confirm = false) => call<{ output: CommandOutput | null }>("quick_actions_run", { id, confirm }),
   quickActionsPick: (kind: "app" | "file" | "folder") => call<string | null>("quick_actions_pick", { kind }),
 
+  // Desktop Organizer (see docs/desktop-organizer.md)
+  organizerPreview: () => call<OrganizerPlan>("organizer_preview"),
+  organizerApply: (items: PlanItem[], source: "manual" | "button" = "manual") => call<ApplyReport>("organizer_apply", { items, source }),
+  organizerRunNow: () => call<ApplyReport>("organizer_run_now"),
+  organizerPending: () => call<{ source: string; created_at: string; files: number } | null>("organizer_pending"),
+  organizerDismissPending: () => call<void>("organizer_dismiss_pending"),
+  organizerOperations: (limit = 100) => call<OrganizerOperation[]>("organizer_operations", { limit }),
+  organizerMoves: (operationId: string) => call<OrganizerMove[]>("organizer_moves", { operationId }),
+  organizerUndoLast: () => call<UndoReport>("organizer_undo_last"),
+  organizerUndoOperation: (operationId: string) => call<UndoReport>("organizer_undo_operation", { operationId }),
+  organizerRestore: (moveIds: number[]) => call<UndoReport>("organizer_restore", { moveIds }),
+  organizerRules: () => call<OrganizerRule[]>("organizer_rules"),
+  organizerSaveRule: (input: OrganizerRuleInput, id?: string) => call<OrganizerRule[]>("organizer_save_rule", { id, input }),
+  organizerDeleteRule: (id: string) => call<OrganizerRule[]>("organizer_delete_rule", { id }),
+  organizerReorderRules: (ids: string[]) => call<OrganizerRule[]>("organizer_reorder_rules", { ids }),
+  organizerResetRules: () => call<OrganizerRule[]>("organizer_reset_rules"),
+  organizerExclude: (name: string) => call<void>("organizer_exclude", { name }),
+  organizerPaths: () => call<{ desktop: string; root: string }>("organizer_paths"),
+  organizerOpenFolder: (path: string) => call<void>("organizer_open_folder", { path }),
+
   // Timers and stopwatches
   timersState: () => call<TimersState>("timers_state"),
   timersSave: (input: TimerInput, id?: string) => call<TimersState>("timers_save", { id, input }),
@@ -814,4 +922,5 @@ export const EVENTS = {
   automationConfirm: "focusdeck://automation-confirm",
   automationRun: "focusdeck://automation-run",
   focusMode: "focusdeck://focus-mode",
+  organizerChanged: "focusdeck://organizer-changed",
 } as const;

@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Layouts from "./pages/Layouts";
 import Modules from "./pages/Modules";
 import Notes from "./pages/Notes";
+import Organizer from "./pages/Organizer";
 import Snippets from "./pages/Snippets";
 import Tasks from "./pages/Tasks";
 import Timers from "./pages/Timers";
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="/snippets" element={<ModuleGate id="snippets"><Snippets /></ModuleGate>} />
               <Route path="/timers" element={<ModuleGate id="timers"><Timers /></ModuleGate>} />
               <Route path="/clipboard" element={<ModuleGate id="clipboard_history"><ClipboardHub /></ModuleGate>} />
+              <Route path="/organizer" element={<ModuleGate id="desktop_organizer"><Organizer /></ModuleGate>} />
               <Route path="/automations" element={<ModuleGate id="automations"><Automations /></ModuleGate>} />
               {/* Always reachable: modules can be switched back on here. */}
               <Route path="/control-center" element={<ControlCenter />} />
