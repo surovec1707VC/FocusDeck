@@ -1,0 +1,33 @@
+{
+  "id": "github",
+  "name": "GitHub",
+  "description": "Репозитории, issues, pull requests и уведомления GitHub.",
+  "icon": "github",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "token", "label": "Personal access token (fine-grained)", "hint": "Создайте токен с доступом только к нужным репозиториям и правами read-only." },
+  "permissions": [
+    { "id": "repos.read", "name": "Чтение репозиториев", "description": "Список репозиториев, ветки, коммиты.", "risk": "read" },
+    { "id": "issues.read", "name": "Чтение issues и PR", "description": "Открытые issues и pull requests, назначенные на вас.", "risk": "read" },
+    { "id": "notifications.read", "name": "Уведомления", "description": "Непрочитанные уведомления GitHub.", "risk": "read" },
+    { "id": "issues.write", "name": "Создание issues", "description": "Создавать issues и комментарии от вашего имени.", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "repos.list", "name": "Список репозиториев", "description": "Ваши репозитории с последней активностью.", "permissions": ["repos.read"] },
+    { "id": "prs.assigned", "name": "Мои pull requests", "description": "PR, где вы автор или ревьюер.", "permissions": ["issues.read"] },
+    { "id": "notifications.list", "name": "Непрочитанные уведомления", "description": "Список уведомлений.", "permissions": ["notifications.read"] },
+    { "id": "issue.create", "name": "Создать issue", "description": "Новый issue в выбранном репозитории (с подтверждением).", "permissions": ["issues.write"] }
+  ],
+  "events": [
+    { "id": "notification.new", "name": "Новое уведомление", "description": "Появилось непрочитанное уведомление (опрос по интервалу)." },
+    { "id": "pr.review_requested", "name": "Запрошено ревью", "description": "Вас добавили ревьюером PR." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "api_url": { "type": "string", "title": "Адрес API", "default": "https://api.github.com" },
+    "poll_minutes": { "type": "integer", "title": "Опрос уведомлений, мин", "default": 15, "minimum": 5, "maximum": 1440 },
+    "default_owner": { "type": "string", "title": "Владелец по умолчанию", "default": "" }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://docs.github.com/en/rest"
+}

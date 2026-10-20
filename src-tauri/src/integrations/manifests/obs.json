@@ -1,0 +1,32 @@
+{
+  "id": "obs",
+  "name": "OBS Studio",
+  "description": "Сцены, запись и трансляция через obs-websocket на этом компьютере.",
+  "icon": "obs",
+  "version": "0.1.0",
+  "kind": "local",
+  "auth": { "type": "password", "label": "Пароль obs-websocket", "hint": "OBS → Сервис → Настройки сервера WebSocket. Не нужен, если аутентификация в OBS выключена.", "optional": true },
+  "permissions": [
+    { "id": "status.read", "name": "Состояние", "description": "Текущая сцена, идёт ли запись или трансляция.", "risk": "read" },
+    { "id": "scenes.switch", "name": "Переключение сцен", "description": "Менять активную сцену.", "risk": "change" },
+    { "id": "record.control", "name": "Управление записью", "description": "Начинать и останавливать запись.", "risk": "change" },
+    { "id": "stream.control", "name": "Управление трансляцией", "description": "Начинать и останавливать трансляцию (с подтверждением).", "risk": "dangerous" }
+  ],
+  "actions": [
+    { "id": "scenes.list", "name": "Список сцен", "description": "Сцены текущей коллекции.", "permissions": ["status.read"] },
+    { "id": "scene.set", "name": "Переключить сцену", "description": "Сделать сцену активной.", "permissions": ["scenes.switch"] },
+    { "id": "record.toggle", "name": "Запись: старт/стоп", "description": "Переключить запись.", "permissions": ["record.control"] },
+    { "id": "stream.toggle", "name": "Трансляция: старт/стоп", "description": "Переключить трансляцию.", "permissions": ["stream.control"] }
+  ],
+  "events": [
+    { "id": "scene.changed", "name": "Сцена изменилась", "description": "В OBS выбрана другая сцена." },
+    { "id": "record.state", "name": "Запись началась или остановилась", "description": "Изменилось состояние записи." },
+    { "id": "stream.state", "name": "Трансляция началась или остановилась", "description": "Изменилось состояние трансляции." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "port": { "type": "integer", "title": "Порт obs-websocket (на 127.0.0.1)", "default": 4455, "minimum": 1, "maximum": 65535 }
+  }},
+  "health": { "kind": "local_port", "setting": "port" },
+  "enabled_by_default": false,
+  "docs_url": "https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md"
+}

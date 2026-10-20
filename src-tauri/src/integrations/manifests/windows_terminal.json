@@ -1,0 +1,25 @@
+{
+  "id": "windows_terminal",
+  "name": "Windows Terminal",
+  "description": "Открывать вкладки и профили Windows Terminal в нужной папке.",
+  "icon": "terminal",
+  "version": "0.1.0",
+  "kind": "local",
+  "auth": { "type": "none" },
+  "permissions": [
+    { "id": "launch", "name": "Запуск Windows Terminal", "description": "Открывать окна и вкладки (команда wt).", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "open.tab", "name": "Новая вкладка", "description": "wt -w 0 nt -d <папка>", "permissions": ["launch"] },
+    { "id": "open.profile", "name": "Открыть профиль", "description": "wt -p <профиль>", "permissions": ["launch"] },
+    { "id": "open.split", "name": "Разделить панель", "description": "wt sp -d <папка>", "permissions": ["launch"] }
+  ],
+  "events": [],
+  "settings": { "type": "object", "properties": {
+    "default_profile": { "type": "string", "title": "Профиль по умолчанию", "default": "" },
+    "new_window": { "type": "boolean", "title": "Всегда новое окно", "default": false }
+  }},
+  "health": { "kind": "executable", "target": "wt" },
+  "enabled_by_default": false,
+  "docs_url": "https://learn.microsoft.com/windows/terminal/command-line-arguments"
+}

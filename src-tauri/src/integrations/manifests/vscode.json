@@ -1,0 +1,26 @@
+{
+  "id": "vscode",
+  "name": "VS Code",
+  "description": "Открывать папки и файлы в Visual Studio Code.",
+  "icon": "vscode",
+  "version": "0.1.0",
+  "kind": "local",
+  "auth": { "type": "none" },
+  "permissions": [
+    { "id": "launch", "name": "Запуск VS Code", "description": "Открывать папки и файлы в редакторе (команда code).", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "open.folder", "name": "Открыть папку", "description": "code <папка>", "permissions": ["launch"] },
+    { "id": "open.file", "name": "Открыть файл на строке", "description": "code --goto <файл:строка>", "permissions": ["launch"] },
+    { "id": "open.new_window", "name": "Новое окно", "description": "code --new-window", "permissions": ["launch"] }
+  ],
+  "events": [],
+  "settings": { "type": "object", "properties": {
+    "executable": { "type": "string", "title": "Путь к code (пусто — искать в PATH)", "default": "" },
+    "variant": { "type": "string", "title": "Вариант", "default": "stable", "enum": ["stable", "insiders"] },
+    "reuse_window": { "type": "boolean", "title": "Открывать в текущем окне", "default": false }
+  }},
+  "health": { "kind": "executable", "target": "code", "setting": "executable" },
+  "enabled_by_default": false,
+  "docs_url": "https://code.visualstudio.com/docs/configure/command-line"
+}

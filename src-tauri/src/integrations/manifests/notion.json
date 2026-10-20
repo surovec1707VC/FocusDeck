@@ -1,0 +1,24 @@
+{
+  "id": "notion",
+  "name": "Notion",
+  "description": "Поиск страниц и добавление записей в базы данных Notion.",
+  "icon": "notion",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "token", "label": "Internal integration secret", "hint": "Подключите интеграцию только к нужным страницам Notion." },
+  "permissions": [
+    { "id": "pages.read", "name": "Чтение страниц", "description": "Поиск и чтение страниц, к которым дан доступ.", "risk": "read" },
+    { "id": "pages.write", "name": "Создание записей", "description": "Добавлять страницы в выбранную базу данных.", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "search", "name": "Поиск", "description": "Поиск страниц по названию.", "permissions": ["pages.read"] },
+    { "id": "page.create", "name": "Добавить в базу", "description": "Новая запись в базе по умолчанию (например, из задачи FocusDeck).", "permissions": ["pages.write"] }
+  ],
+  "events": [],
+  "settings": { "type": "object", "properties": {
+    "default_database_id": { "type": "string", "title": "ID базы по умолчанию", "default": "" }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://developers.notion.com/reference/intro"
+}

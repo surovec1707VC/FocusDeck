@@ -11,6 +11,7 @@ mod error;
 mod focus;
 mod hotkeys;
 mod info;
+mod integrations;
 mod logging;
 mod modules;
 mod notifications;
@@ -43,6 +44,7 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
         permissions::seed(&pool).await?;
         registry::seed(&pool).await?;
         workspace::seed(&pool).await?;
+        integrations::seed(&pool).await?;
         clipboard_hub::apply_persistence(&pool).await?;
         anyhow::Ok(pool)
     })?;
@@ -284,6 +286,17 @@ pub fn run() {
             automation::automations_pick,
             focus::focus_mode_get,
             focus::focus_mode_set,
+            integrations::integrations_list,
+            integrations::integrations_get,
+            integrations::integrations_set_enabled,
+            integrations::integrations_set_offline,
+            integrations::integrations_update_settings,
+            integrations::integrations_reset_settings,
+            integrations::integrations_set_permission,
+            integrations::integrations_set_secret,
+            integrations::integrations_clear_secret,
+            integrations::integrations_check,
+            integrations::integrations_logs,
             devtools::devtools_pick_folder,
             devtools::git::git_repos,
             devtools::git::git_open_repo,

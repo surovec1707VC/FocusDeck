@@ -59,7 +59,7 @@ pub const WIDGET_COUNTDOWN: &str = "widget_countdown";
 pub const WIDGET_STOPWATCH: &str = "widget_stopwatch";
 
 /// Features that exist only as storage/placeholder so far.
-pub const IN_DEVELOPMENT: &[&str] = &[FILES, INTEGRATIONS];
+pub const IN_DEVELOPMENT: &[&str] = &[FILES];
 
 fn no_settings() -> Value {
     json!({ "type": "object", "properties": {} })
@@ -466,16 +466,24 @@ pub const BUILTIN: &[ModuleDef] = &[
     },
     ModuleDef {
         id: INTEGRATIONS,
-        name: "Локальные интеграции",
-        description: "Подключения к программам на этом компьютере.",
-        details: "В разработке. Только локальные интеграции, без облачных сервисов.",
+        name: "Интеграции",
+        description: "Коннекторы к программам и сервисам: каталог, настройки, разрешения, журнал.",
+        details: "13 коннекторов (GitHub, GitLab, VS Code, Windows Terminal, OBS, Twitch, Discord, Telegram, Notion, \
+                  Google Calendar, Spotify, браузер, локальные файлы), каждый описан манифестом и выключен по умолчанию. \
+                  Токены хранятся только в Windows Credential Manager. Offline Mode (включён по умолчанию) \
+                  приостанавливает все облачные коннекторы; облачный коннектор включается только с подтверждением. \
+                  На этом этапе коннекторы не выполняют действий и не обращаются к внешним API. \
+                  Если отключить, страница скрывается, настройки и секреты сохраняются.",
         category: Category::Integrations,
-        version: "0.1.0",
+        version: "1.0.0",
         enabled_by_default: false,
         critical: false,
         requires_restart: false,
         permissions: &[],
-        settings_schema: no_settings,
+        settings_schema: || json!({ "type": "object", "properties": {
+            "offline_mode": { "type": "boolean", "title": "Offline Mode: приостановить облачные интеграции", "default": true },
+            "log_limit": { "type": "integer", "title": "Записей журнала на интеграцию", "default": 500, "minimum": 50, "maximum": 10000 }
+        }}),
     },
     // --- Developer Tools ---
     ModuleDef {

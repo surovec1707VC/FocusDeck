@@ -1,0 +1,24 @@
+{
+  "id": "discord",
+  "name": "Discord",
+  "description": "Отправка сообщений в канал через webhook или бота.",
+  "icon": "discord",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "api_key", "label": "Webhook URL или токен бота", "hint": "Webhook — самый простой вариант: он может только писать в один канал." },
+  "permissions": [
+    { "id": "messages.send", "name": "Отправка сообщений", "description": "Писать в выбранный канал (каждое сообщение — с подтверждением).", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "message.send", "name": "Отправить сообщение", "description": "Текст или embed в канал.", "permissions": ["messages.send"] }
+  ],
+  "events": [],
+  "settings": { "type": "object", "properties": {
+    "mode": { "type": "string", "title": "Способ", "default": "webhook", "enum": ["webhook", "bot"] },
+    "channel_id": { "type": "string", "title": "ID канала (для бота)", "default": "" },
+    "username": { "type": "string", "title": "Имя отправителя (webhook)", "default": "FocusDeck" }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://discord.com/developers/docs/resources/webhook"
+}

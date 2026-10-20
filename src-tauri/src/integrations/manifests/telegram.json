@@ -1,0 +1,26 @@
+{
+  "id": "telegram",
+  "name": "Telegram",
+  "description": "Уведомления себе в Telegram через своего бота.",
+  "icon": "telegram",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "api_key", "label": "Токен бота от @BotFather", "hint": "Бот пишет только в указанный chat id." },
+  "permissions": [
+    { "id": "messages.send", "name": "Отправка сообщений", "description": "Отправлять сообщения в указанный чат.", "risk": "change" },
+    { "id": "updates.read", "name": "Входящие команды", "description": "Читать команды, отправленные боту (long polling).", "risk": "read" }
+  ],
+  "actions": [
+    { "id": "message.send", "name": "Отправить сообщение", "description": "Текст в чат.", "permissions": ["messages.send"] }
+  ],
+  "events": [
+    { "id": "command.received", "name": "Команда боту", "description": "Боту пришла команда из разрешённого чата." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "chat_id": { "type": "string", "title": "Chat ID", "default": "" },
+    "silent": { "type": "boolean", "title": "Без звука", "default": false }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://core.telegram.org/bots/api"
+}

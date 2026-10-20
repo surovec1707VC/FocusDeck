@@ -75,6 +75,7 @@ mod tests {
                 "automations",
                 "calendar_events",
                 "clipboard_history",
+                "connector_logs",
                 "connector_settings",
                 "connectors",
                 "dev_git_repos",

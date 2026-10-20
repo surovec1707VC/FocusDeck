@@ -1,0 +1,30 @@
+{
+  "id": "local_files",
+  "name": "Локальные файлы",
+  "description": "Доступ к выбранной папке: список файлов, открытие, отслеживание изменений.",
+  "icon": "files",
+  "version": "0.1.0",
+  "kind": "local",
+  "auth": { "type": "none" },
+  "permissions": [
+    { "id": "files.read", "name": "Чтение папки", "description": "Список файлов в разрешённой папке.", "risk": "read" },
+    { "id": "files.open", "name": "Открытие файлов", "description": "Открывать файлы в программе по умолчанию.", "risk": "change" },
+    { "id": "files.watch", "name": "Отслеживание изменений", "description": "Следить за появлением и изменением файлов.", "risk": "read" }
+  ],
+  "actions": [
+    { "id": "folder.list", "name": "Список файлов", "description": "Файлы разрешённой папки.", "permissions": ["files.read"] },
+    { "id": "file.open", "name": "Открыть файл", "description": "В программе по умолчанию.", "permissions": ["files.open"] },
+    { "id": "file.reveal", "name": "Показать в проводнике", "description": "Открыть папку с выделенным файлом.", "permissions": ["files.open"] }
+  ],
+  "events": [
+    { "id": "file.created", "name": "Файл создан", "description": "В отслеживаемой папке появился файл." },
+    { "id": "file.changed", "name": "Файл изменён", "description": "Файл в отслеживаемой папке изменился." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "root": { "type": "string", "title": "Разрешённая папка (полный путь)", "default": "" },
+    "include_hidden": { "type": "boolean", "title": "Показывать скрытые файлы", "default": false }
+  }},
+  "health": { "kind": "path", "setting": "root" },
+  "enabled_by_default": false,
+  "docs_url": "https://learn.microsoft.com/windows/win32/fileio/file-systems"
+}

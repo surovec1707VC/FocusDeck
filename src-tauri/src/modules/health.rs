@@ -118,6 +118,11 @@ pub async fn check(app: &AppHandle, id: &str) -> AppResult<(HealthState, String)
                 Ok((HealthState::Error, "папка журнала не найдена".into()))
             }
         }
+        INTEGRATIONS => {
+            let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM connectors WHERE enabled = 1").fetch_one(db).await?;
+            let offline = crate::integrations::offline_mode(db).await;
+            ok(format!("включено интеграций: {n}{}", if offline { ", Offline Mode" } else { "" }))
+        }
         _ => ok("работает".into()),
     }
 }

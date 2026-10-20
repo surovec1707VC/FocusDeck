@@ -1,0 +1,24 @@
+{
+  "id": "browser",
+  "name": "Браузер",
+  "description": "Открывать ссылки и наборы ссылок в браузере по умолчанию или выбранном.",
+  "icon": "browser",
+  "version": "0.1.0",
+  "kind": "local",
+  "auth": { "type": "none" },
+  "permissions": [
+    { "id": "open.urls", "name": "Открытие ссылок", "description": "Открывать http(s)-ссылки в браузере.", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "url.open", "name": "Открыть ссылку", "description": "Одна ссылка в новой вкладке.", "permissions": ["open.urls"] },
+    { "id": "urls.open_set", "name": "Открыть набор ссылок", "description": "Несколько ссылок сразу (например, для макета).", "permissions": ["open.urls"] }
+  ],
+  "events": [],
+  "settings": { "type": "object", "properties": {
+    "browser": { "type": "string", "title": "Браузер", "default": "default", "enum": ["default", "edge", "chrome", "firefox"] },
+    "private": { "type": "boolean", "title": "Приватное окно", "default": false }
+  }},
+  "health": { "kind": "none" },
+  "enabled_by_default": false,
+  "docs_url": "https://learn.microsoft.com/windows/win32/shell/launch"
+}

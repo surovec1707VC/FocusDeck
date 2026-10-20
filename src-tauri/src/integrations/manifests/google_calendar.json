@@ -1,0 +1,28 @@
+{
+  "id": "google_calendar",
+  "name": "Google Calendar",
+  "description": "События календаря для виджета «Календарь» и напоминаний.",
+  "icon": "calendar",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "oauth2", "label": "OAuth refresh token", "hint": "Вход через Google (OAuth) появится на следующем этапе." },
+  "permissions": [
+    { "id": "events.read", "name": "Чтение событий", "description": "События выбранных календарей на ближайшие дни.", "risk": "read" },
+    { "id": "events.write", "name": "Создание событий", "description": "Добавлять события (с подтверждением).", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "events.upcoming", "name": "Ближайшие события", "description": "События на N дней вперёд.", "permissions": ["events.read"] },
+    { "id": "event.create", "name": "Создать событие", "description": "Новое событие в календаре.", "permissions": ["events.write"] }
+  ],
+  "events": [
+    { "id": "event.starting", "name": "Скоро событие", "description": "До начала события осталось N минут." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "calendar_id": { "type": "string", "title": "ID календаря", "default": "primary" },
+    "days_ahead": { "type": "integer", "title": "Дней вперёд", "default": 7, "minimum": 1, "maximum": 60 },
+    "remind_minutes": { "type": "integer", "title": "Напоминать за, мин", "default": 10, "minimum": 0, "maximum": 1440 }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://developers.google.com/workspace/calendar/api/guides/overview"
+}

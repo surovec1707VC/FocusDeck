@@ -1,0 +1,30 @@
+{
+  "id": "gitlab",
+  "name": "GitLab",
+  "description": "Проекты, merge requests и пайплайны GitLab.com или собственного сервера.",
+  "icon": "gitlab",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "token", "label": "Personal access token", "hint": "Достаточно scope read_api." },
+  "permissions": [
+    { "id": "projects.read", "name": "Чтение проектов", "description": "Список проектов и веток.", "risk": "read" },
+    { "id": "mrs.read", "name": "Чтение merge requests", "description": "MR, где вы автор или ревьюер.", "risk": "read" },
+    { "id": "pipelines.read", "name": "Пайплайны", "description": "Статус последних пайплайнов.", "risk": "read" }
+  ],
+  "actions": [
+    { "id": "projects.list", "name": "Список проектов", "description": "Проекты, где вы участник.", "permissions": ["projects.read"] },
+    { "id": "mrs.assigned", "name": "Мои merge requests", "description": "Открытые MR.", "permissions": ["mrs.read"] },
+    { "id": "pipelines.latest", "name": "Последние пайплайны", "description": "Статус пайплайнов по проекту.", "permissions": ["pipelines.read"] }
+  ],
+  "events": [
+    { "id": "pipeline.failed", "name": "Пайплайн упал", "description": "Последний пайплайн проекта завершился с ошибкой." },
+    { "id": "mr.review_requested", "name": "Запрошено ревью", "description": "Вас назначили ревьюером MR." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "base_url": { "type": "string", "title": "Адрес сервера", "default": "https://gitlab.com" },
+    "poll_minutes": { "type": "integer", "title": "Интервал опроса, мин", "default": 15, "minimum": 5, "maximum": 1440 }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://docs.gitlab.com/api/rest/"
+}

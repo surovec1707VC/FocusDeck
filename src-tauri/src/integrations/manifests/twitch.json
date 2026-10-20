@@ -1,0 +1,30 @@
+{
+  "id": "twitch",
+  "name": "Twitch",
+  "description": "Статус вашего канала, чат и события трансляции.",
+  "icon": "twitch",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "oauth2", "label": "OAuth access token", "hint": "Вход через OAuth появится на следующем этапе; пока токен можно сохранить вручную." },
+  "permissions": [
+    { "id": "channel.read", "name": "Канал", "description": "Название, категория, идёт ли трансляция, число зрителей.", "risk": "read" },
+    { "id": "chat.read", "name": "Чтение чата", "description": "Сообщения чата канала.", "risk": "read" },
+    { "id": "channel.edit", "name": "Изменение канала", "description": "Менять название и категорию трансляции.", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "stream.info", "name": "Статус трансляции", "description": "Онлайн или офлайн, зрители, категория.", "permissions": ["channel.read"] },
+    { "id": "title.set", "name": "Сменить название", "description": "Новое название трансляции (с подтверждением).", "permissions": ["channel.edit"] }
+  ],
+  "events": [
+    { "id": "stream.online", "name": "Трансляция началась", "description": "Канал вышел в эфир." },
+    { "id": "follow.new", "name": "Новый фолловер", "description": "На канал подписались." },
+    { "id": "chat.message", "name": "Сообщение в чате", "description": "Новое сообщение (с фильтром по словам)." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "channel": { "type": "string", "title": "Канал", "default": "" },
+    "client_id": { "type": "string", "title": "Client ID приложения", "default": "" }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://dev.twitch.tv/docs/api/"
+}

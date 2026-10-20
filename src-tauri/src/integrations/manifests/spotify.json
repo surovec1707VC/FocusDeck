@@ -1,0 +1,28 @@
+{
+  "id": "spotify",
+  "name": "Spotify",
+  "description": "Что сейчас играет и управление воспроизведением.",
+  "icon": "spotify",
+  "version": "0.1.0",
+  "kind": "cloud",
+  "auth": { "type": "oauth2", "label": "OAuth refresh token", "hint": "Вход через Spotify (OAuth PKCE) появится на следующем этапе." },
+  "permissions": [
+    { "id": "playback.read", "name": "Текущий трек", "description": "Что играет и на каком устройстве.", "risk": "read" },
+    { "id": "playback.control", "name": "Управление воспроизведением", "description": "Пауза, следующий и предыдущий трек.", "risk": "change" }
+  ],
+  "actions": [
+    { "id": "now_playing", "name": "Сейчас играет", "description": "Трек, исполнитель, прогресс.", "permissions": ["playback.read"] },
+    { "id": "play_pause", "name": "Пауза / воспроизведение", "description": "Переключить воспроизведение.", "permissions": ["playback.control"] },
+    { "id": "next", "name": "Следующий трек", "description": "Перейти к следующему треку.", "permissions": ["playback.control"] }
+  ],
+  "events": [
+    { "id": "track.changed", "name": "Сменился трек", "description": "Начал играть другой трек." }
+  ],
+  "settings": { "type": "object", "properties": {
+    "client_id": { "type": "string", "title": "Client ID приложения", "default": "" },
+    "poll_seconds": { "type": "integer", "title": "Обновлять каждые, с", "default": 10, "minimum": 5, "maximum": 300 }
+  }},
+  "health": { "kind": "token" },
+  "enabled_by_default": false,
+  "docs_url": "https://developer.spotify.com/documentation/web-api"
+}
