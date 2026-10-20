@@ -209,7 +209,7 @@ pub async fn run(app: &AppHandle, id: &str, confirm: bool) -> AppResult<RunResul
 }
 
 /// Console programs write UTF-8 or the OEM code page (cp866 on Russian Windows).
-fn decode(bytes: &[u8]) -> String {
+pub(crate) fn decode(bytes: &[u8]) -> String {
     if let Ok(s) = std::str::from_utf8(bytes) {
         return s.to_string();
     }

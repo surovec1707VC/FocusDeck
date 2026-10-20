@@ -6,6 +6,7 @@ mod autostart;
 mod background;
 mod clipboard_hub;
 mod db;
+mod devtools;
 mod error;
 mod focus;
 mod hotkeys;
@@ -283,6 +284,52 @@ pub fn run() {
             automation::automations_pick,
             focus::focus_mode_get,
             focus::focus_mode_set,
+            devtools::git::git_repos,
+            devtools::git::git_open_repo,
+            devtools::git::git_forget_repo,
+            devtools::git::git_status,
+            devtools::git::git_log,
+            devtools::git::git_diff,
+            devtools::git::git_stage,
+            devtools::git::git_commit,
+            devtools::git::git_pull,
+            devtools::git::git_push,
+            devtools::projects::projects_list,
+            devtools::projects::projects_add,
+            devtools::projects::projects_scan,
+            devtools::projects::projects_update,
+            devtools::projects::projects_redetect,
+            devtools::projects::projects_remove,
+            devtools::projects::projects_open,
+            devtools::projects::projects_run,
+            devtools::terminal::terminal_shells,
+            devtools::terminal::terminal_home,
+            devtools::terminal::terminal_open,
+            devtools::terminal::terminal_run,
+            devtools::terminal::terminal_cancel,
+            devtools::terminal::terminal_history,
+            devtools::terminal::terminal_history_clear,
+            devtools::terminal::terminal_favorites,
+            devtools::terminal::terminal_favorite_save,
+            devtools::terminal::terminal_favorite_delete,
+            devtools::api::api_send,
+            devtools::api::api_to_curl,
+            devtools::api::api_workspace,
+            devtools::api::api_collection_save,
+            devtools::api::api_collection_delete,
+            devtools::api::api_request_save,
+            devtools::api::api_request_delete,
+            devtools::api::api_environments,
+            devtools::api::api_environment_save,
+            devtools::api::api_environment_delete,
+            devtools::api::api_environment_activate,
+            devtools::api::api_history,
+            devtools::api::api_history_clear,
+            devtools::regex::regex_list,
+            devtools::regex::regex_save,
+            devtools::regex::regex_delete,
+            devtools::jsonyaml::devjson_process,
+            devtools::jsonyaml::devjson_query,
         ])
         .build(tauri::generate_context!())
         .expect("error while building FocusDeck")

@@ -6,6 +6,7 @@ use super::types::{Category, ModuleDef};
 use crate::permissions::{
     PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_LAUNCH_APPS,
     PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS, PERM_PASTE, PERM_WINDOWS, PERM_MOVE_FILES,
+    PERM_NETWORK_API, PERM_RUN_COMMANDS,
 };
 
 // Critical modules (confirmation required to turn off).
@@ -34,6 +35,14 @@ pub const TRAY: &str = "tray";
 pub const AUTOSTART: &str = "autostart";
 pub const NOTIFICATIONS: &str = "notifications";
 pub const INTEGRATIONS: &str = "integrations";
+
+// Developer Tools: one module per tool.
+pub const DEV_GIT: &str = "dev_git";
+pub const DEV_PROJECTS: &str = "dev_projects";
+pub const DEV_TERMINAL: &str = "dev_terminal";
+pub const DEV_API: &str = "dev_api";
+pub const DEV_REGEX: &str = "dev_regex";
+pub const DEV_JSON: &str = "dev_json";
 
 // Widget modules: one per widget kind (see `crate::widgets::catalog`).
 pub const WIDGET_DATE: &str = "widget_date";
@@ -467,6 +476,125 @@ pub const BUILTIN: &[ModuleDef] = &[
         requires_restart: false,
         permissions: &[],
         settings_schema: no_settings,
+    },
+    // --- Developer Tools ---
+    ModuleDef {
+        id: DEV_GIT,
+        name: "Git",
+        description: "Ветка, статус, staged/unstaged, коммиты, diff; commit, push и pull.",
+        details: "Работает с установленным git. Чтение (статус, история, diff) разрешений не требует; \
+                  stage, commit, push и pull — только с разрешением «Git: изменение репозиториев», каждое \
+                  действие записывается в журнал. Push и pull выполняются только после подтверждения, \
+                  pull — только fast-forward, push — никогда не принудительный. Есть виджет для «Обзора». \
+                  Если отключить, страница и виджет скрываются.",
+        category: Category::DeveloperTools,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "log_limit": { "type": "integer", "title": "Коммитов в истории", "default": 30, "minimum": 5, "maximum": 200 },
+            "git_path": { "type": "string", "title": "Путь к git.exe (пусто — из PATH)", "default": "" },
+            "timeout_secs": { "type": "integer", "title": "Таймаут push/pull, с", "default": 120, "minimum": 10, "maximum": 900 }
+        }}),
+    },
+    ModuleDef {
+        id: DEV_PROJECTS,
+        name: "Project Launcher",
+        description: "Список проектов: тип, команды запуска, VS Code, терминал, Git.",
+        details: "Тип проекта и команды определяются по файлам (package.json, Cargo.toml, pyproject.toml, \
+                  *.sln, go.mod …). Открытие в VS Code, терминале и проводнике требует разрешения «Запуск \
+                  программ», запуск команд проекта — «Выполнение команд». Все запуски записываются в журнал \
+                  действий. Если отключить, страница скрывается, список проектов сохраняется.",
+        category: Category::DeveloperTools,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_LAUNCH_APPS],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "editor_command": { "type": "string", "title": "Команда редактора", "default": "code" },
+            "default_shell": { "type": "string", "title": "Терминал по умолчанию", "default": "powershell", "enum": ["powershell", "cmd", "git_bash", "wsl", "custom"] }
+        }}),
+    },
+    ModuleDef {
+        id: DEV_TERMINAL,
+        name: "Terminal Quick Launcher",
+        description: "PowerShell, CMD, Git Bash, WSL и свой shell: вкладки, история, избранное.",
+        details: "Открывает терминал в отдельном окне (разрешение «Запуск программ») или выполняет команды \
+                  во вкладках внутри FocusDeck (разрешение «Выполнение команд», каждая команда — в журнале \
+                  действий). Вкладки выполняют команды без интерактивного ввода: для программ, которые \
+                  ждут ввода, откройте терминал в окне. Если отключить, страница скрывается, история и \
+                  избранное сохраняются.",
+        category: Category::DeveloperTools,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_RUN_COMMANDS],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "custom_shell_path": { "type": "string", "title": "Свой shell: путь к exe", "default": "" },
+            "custom_shell_args": { "type": "string", "title": "Свой shell: аргументы перед командой", "default": "-c" },
+            "command_timeout_secs": { "type": "integer", "title": "Таймаут команды во вкладке, с", "default": 120, "minimum": 5, "maximum": 3600 },
+            "history_limit": { "type": "integer", "title": "Хранить команд в истории", "default": 1000, "minimum": 50, "maximum": 20000 },
+            "save_history": { "type": "boolean", "title": "Сохранять историю команд", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: DEV_API,
+        name: "API Tester",
+        description: "REST-запросы, коллекции, переменные окружения, история, экспорт в curl.",
+        details: "Запросы уходят только по вашей команде и только при выданном разрешении «Сеть: API Tester». \
+                  Переменные окружения ({{имя}}) хранятся локально в базе открытым текстом — не держите \
+                  в них боевые секреты. Каждый запрос попадает в историю и журнал действий. Если отключить, \
+                  страница скрывается, коллекции сохраняются.",
+        category: Category::DeveloperTools,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_NETWORK_API],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "timeout_secs": { "type": "integer", "title": "Таймаут запроса, с", "default": 30, "minimum": 1, "maximum": 600 },
+            "follow_redirects": { "type": "boolean", "title": "Следовать редиректам", "default": true },
+            "max_response_kb": { "type": "integer", "title": "Показывать ответ до, КБ", "default": 2048, "minimum": 16, "maximum": 51200 },
+            "history_limit": { "type": "integer", "title": "Хранить запросов в истории", "default": 500, "minimum": 10, "maximum": 10000 }
+        }}),
+    },
+    ModuleDef {
+        id: DEV_REGEX,
+        name: "Regex Tester",
+        description: "Live-проверка регулярных выражений с подсветкой групп и шаблонами.",
+        details: "Выражение проверяется движком JavaScript (как в браузере и Node.js) в отдельном потоке: \
+                  зависшее выражение останавливается по таймауту. Сохранённые выражения хранятся локально. \
+                  Если отключить, страница скрывается.",
+        category: Category::DeveloperTools,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "timeout_ms": { "type": "integer", "title": "Таймаут проверки, мс", "default": 1000, "minimum": 100, "maximum": 10000 },
+            "max_matches": { "type": "integer", "title": "Показывать совпадений", "default": 1000, "minimum": 10, "maximum": 100000 }
+        }}),
+    },
+    ModuleDef {
+        id: DEV_JSON,
+        name: "JSON/YAML Tools",
+        description: "Форматирование, валидация, JSON ⇄ YAML, JSONPath, ошибки со строкой и столбцом.",
+        details: "Всё выполняется локально, данные никуда не сохраняются. Если отключить, страница скрывается.",
+        category: Category::DeveloperTools,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "indent": { "type": "integer", "title": "Отступ при форматировании", "default": 2, "minimum": 1, "maximum": 8 },
+            "sort_keys": { "type": "boolean", "title": "Сортировать ключи", "default": false }
+        }}),
     },
     // --- widgets (one module per widget kind) ---
     ModuleDef {

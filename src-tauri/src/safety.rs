@@ -76,6 +76,16 @@ pub const ACTIONS: &[ActionDef] = &[
     a("automations.run", "Выполнение автоматизации", "automations", None, Risk::Change, false),
     a("organizer.move", "Перемещение файлов рабочего стола", "desktop_organizer", Some(PERM_MOVE_FILES), Risk::Change, true),
     a("clipboard.quick_action", "Быстрое действие Clipboard Hub", "clipboard_history", None, Risk::Change, false),
+    // Developer Tools
+    a("git.stage", "Git: добавить или убрать файлы из индекса", "dev_git", Some(PERM_GIT), Risk::Change, false),
+    a("git.commit", "Git: создать коммит", "dev_git", Some(PERM_GIT), Risk::Change, false),
+    a("git.pull", "Git: pull (только fast-forward)", "dev_git", Some(PERM_GIT), Risk::Dangerous, false),
+    a("git.push", "Git: push", "dev_git", Some(PERM_GIT), Risk::Dangerous, false),
+    a("projects.open", "Открыть проект в редакторе, терминале или проводнике", "dev_projects", Some(PERM_LAUNCH_APPS), Risk::Change, false),
+    a("projects.run", "Запустить команду проекта", "dev_projects", Some(PERM_RUN_COMMANDS), Risk::Change, false),
+    a("terminal.open", "Открыть терминал в окне", "dev_terminal", Some(PERM_LAUNCH_APPS), Risk::Change, false),
+    a("terminal.run", "Выполнить команду во вкладке терминала", "dev_terminal", Some(PERM_RUN_COMMANDS), Risk::Change, false),
+    a("api.send", "API Tester: отправить запрос", "dev_api", Some(PERM_NETWORK_API), Risk::Change, false),
 ];
 
 pub fn find(id: &str) -> AppResult<&'static ActionDef> {

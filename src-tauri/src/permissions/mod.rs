@@ -27,6 +27,8 @@ pub const PERM_MOUSE: &str = "input.mouse";
 pub const PERM_SCREEN: &str = "screen.capture";
 pub const PERM_SYSTEM_SETTINGS: &str = "system.settings";
 pub const PERM_UI_AUTOMATION: &str = "ui.automation";
+pub const PERM_GIT: &str = "dev.git";
+pub const PERM_NETWORK_API: &str = "network.api_tester";
 
 struct Definition {
     id: &'static str,
@@ -149,6 +151,18 @@ const DEFINITIONS: &[Definition] = &[
         id: PERM_UI_AUTOMATION,
         name: "UI Automation",
         description: "Читать структуру интерфейса окон других программ (кнопки, поля, их названия) через Windows UI Automation. Только по явному запросу.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_GIT,
+        name: "Git: изменение репозиториев",
+        description: "Developer Tools → Git: добавлять файлы в индекс, создавать коммиты, выполнять push и pull (push и pull — только после подтверждения).",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_NETWORK_API,
+        name: "Сеть: API Tester",
+        description: "Отправлять HTTP-запросы, которые вы сами составили в API Tester, на указанные вами адреса.",
         granted_by_default: false,
     },
 ];
@@ -277,8 +291,8 @@ pub fn category(id: &str) -> &'static str {
         PERM_KEYBOARD | PERM_PASTE | PERM_GLOBAL_HOTKEYS => "keyboard",
         PERM_MOUSE => "mouse",
         PERM_SCREEN => "screen",
-        PERM_LAUNCH_APPS | PERM_RUN_COMMANDS | PERM_CLOSE_APPS | PERM_AUTOSTART => "processes",
-        PERM_NETWORK_WEATHER => "network",
+        PERM_LAUNCH_APPS | PERM_RUN_COMMANDS | PERM_CLOSE_APPS | PERM_AUTOSTART | PERM_GIT => "processes",
+        PERM_NETWORK_WEATHER | PERM_NETWORK_API => "network",
         PERM_NOTIFICATIONS => "notifications",
         _ => "system",
     }
@@ -287,9 +301,10 @@ pub fn category(id: &str) -> &'static str {
 /// Modules that use a permission inside some of their actions (in addition
 /// to the module catalog, which lists the permissions a module needs to work).
 const ACTION_USES: &[(&str, &[&str])] = &[
-    (PERM_LAUNCH_APPS, &["widget_app_launcher", "clipboard_history", "automations", "windows_integration"]),
+    (PERM_LAUNCH_APPS, &["widget_app_launcher", "clipboard_history", "automations", "windows_integration", "dev_terminal"]),
     (PERM_PASTE, &["snippets", "clipboard_history", "automations"]),
-    (PERM_RUN_COMMANDS, &["clipboard_history", "automations"]),
+    (PERM_RUN_COMMANDS, &["clipboard_history", "automations", "dev_projects"]),
+    (PERM_GIT, &["dev_git"]),
     (PERM_CLOSE_APPS, &["automations"]),
     (PERM_DELETE_FILES, &["automations"]),
     (PERM_MOVE_FILES, &["desktop_organizer"]),

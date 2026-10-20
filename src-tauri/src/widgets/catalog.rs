@@ -86,6 +86,7 @@ pub const WIDGETS: &[WidgetDef] = &[
     def("notifications", "Уведомления", WIDGET_NOTIFICATIONS, &[NOTIFICATIONS], C::Information, D::Database, (4, 4), (3, 3), 30),
     def("weather", "Погода", WIDGET_WEATHER, &[], C::Information, D::Network, (4, 3), (3, 3), 1800),
     def("status", "Состояние", WIDGET_STATUS, &[], C::Information, D::Database, (3, 3), (2, 2), 30),
+    def("git", "Git", DEV_GIT, &[], C::Productivity, D::System, (4, 4), (3, 3), 30),
 ];
 
 pub fn find(kind: &str) -> Option<&'static WidgetDef> {
@@ -126,7 +127,7 @@ mod tests {
     fn kinds_are_unique_and_sizes_valid() {
         let kinds: HashSet<_> = WIDGETS.iter().map(|w| w.kind).collect();
         assert_eq!(kinds.len(), WIDGETS.len());
-        assert_eq!(WIDGETS.len(), 14);
+        assert_eq!(WIDGETS.len(), 15);
         for w in WIDGETS {
             assert!(w.min_size.0 <= w.default_size.0 && w.min_size.1 <= w.default_size.1, "{}", w.kind);
             assert!(w.default_size.0 <= 12, "{}", w.kind);

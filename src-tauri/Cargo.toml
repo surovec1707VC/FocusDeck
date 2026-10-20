@@ -21,7 +21,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["preserve_order"] }
 tokio = { version = "1.54.0", features = ["macros", "rt-multi-thread", "sync", "time", "process"] }
 sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "sqlite", "migrate", "chrono", "macros"] }
 thiserror = "2.0.21"
@@ -34,6 +34,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 tauri-plugin-dialog = "2"
 base64 = "0.22"
 reqwest = { version = "0.13.5", features = ["json", "query"] }
+serde_norway = "0.9"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

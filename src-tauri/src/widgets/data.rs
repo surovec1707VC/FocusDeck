@@ -91,6 +91,7 @@ pub async fn load(app: &AppHandle, w: &Widget, params: &Value, force: bool) -> A
             let granted = permissions::is_granted(db, PERM_LAUNCH_APPS).await?;
             Fetched::now(json!({ "apps": apps, "permission": granted }))
         }
+        "git" => Fetched::now(crate::devtools::git::summary(app).await?),
         "system_info" => {
             let info = tauri::async_runtime::spawn_blocking(system::snapshot).await.map_err(anyhow::Error::from)?;
             Fetched::now(serde_json::to_value(info)?)
