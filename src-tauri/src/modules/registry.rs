@@ -245,7 +245,7 @@ mod tests {
         let all = list(&pool, &HashSet::new()).await.unwrap();
         assert_eq!(all.len(), BUILTIN.len());
         let clock = all.iter().find(|m| m.id == WIDGET_CLOCK).unwrap();
-        assert_eq!(clock.settings, json!({ "show_seconds": true, "show_date": true }));
+        assert_eq!(clock.settings, json!({ "show_seconds": true, "hour12": false, "show_date": true }));
         assert_eq!(clock.version, "1.0.0");
         let clip = all.iter().find(|m| m.id == CLIPBOARD).unwrap();
         assert!(!clip.enabled);

@@ -1,7 +1,8 @@
 //! Global hotkeys: the show/hide window shortcut and hotkey-triggered
 //! automations. Nothing is registered unless the «Глобальные горячие
 //! клавиши» module, the setting and the permission are all on. Automation
-//! shortcuts also need the Automations module and the automation's own module.
+//! shortcuts also need the Automations module and the automation's own module;
+//! layout shortcuts need the Layouts module.
 
 use std::str::FromStr;
 
@@ -10,7 +11,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, S
 
 use crate::automation::{engine, store, types::Trigger};
 use crate::error::{AppError, AppResult};
-use crate::modules::catalog::{AUTOMATIONS, HOTKEYS};
+use crate::modules::catalog::{AUTOMATIONS, HOTKEYS, LAYOUTS};
 use crate::modules::registry;
 use crate::permissions::{self, PERM_GLOBAL_HOTKEYS};
 use crate::state::AppState;
@@ -19,6 +20,7 @@ use crate::state::AppState;
 pub enum HotkeyTarget {
     ToggleWindow,
     Automation(String),
+    Layout(String),
 }
 
 /// Called by the global-shortcut plugin for every registered shortcut.
@@ -37,8 +39,30 @@ pub fn handle(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
                 }
             });
         }
+        Some(HotkeyTarget::Layout(id)) => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = crate::workspace::activate_from_hotkey(&app, &id).await {
+                    tracing::warn!("hotkey layout {id}: {e}");
+                }
+            });
+        }
         None => {}
     }
+}
+
+/// Global hotkeys are allowed: setting, module and permission are all on.
+pub async fn active(app: &AppHandle) -> AppResult<bool> {
+    let state = app.state::<AppState>();
+    Ok(state.settings().global_hotkeys_enabled
+        && registry::is_enabled(&state.db, HOTKEYS).await?
+        && permissions::is_granted(&state.db, PERM_GLOBAL_HOTKEYS).await?)
+}
+
+/// Whether the layout's shortcut is registered right now.
+pub fn layout_registered(app: &AppHandle, layout_id: &str) -> bool {
+    let target = HotkeyTarget::Layout(layout_id.to_string());
+    app.state::<AppState>().hotkeys.lock().unwrap().values().any(|t| *t == target)
 }
 
 /// Re-registers all shortcuts from current modules, settings and automations.
@@ -51,10 +75,7 @@ pub async fn sync(app: &AppHandle) -> AppResult<()> {
     state.hotkeys.lock().unwrap().clear();
 
     let settings = state.settings();
-    let allowed = settings.global_hotkeys_enabled
-        && registry::is_enabled(&state.db, HOTKEYS).await?
-        && permissions::is_granted(&state.db, PERM_GLOBAL_HOTKEYS).await?;
-    if !allowed {
+    if !active(app).await? {
         tracing::info!("global hotkeys are off");
         return Ok(());
     }
@@ -85,6 +106,14 @@ pub async fn sync(app: &AppHandle) -> AppResult<()> {
             if let Err(e) = register(shortcut, HotkeyTarget::Automation(a.id.clone())) {
                 tracing::warn!(automation = %a.id, "{e}");
                 let _ = store::log(&state.db, &a.id, "error", &e.to_string(), 500).await;
+            }
+        }
+    }
+    if registry::is_enabled(&state.db, LAYOUTS).await? {
+        for l in crate::workspace::layouts(&state.db).await? {
+            let Some(shortcut) = &l.hotkey else { continue };
+            if let Err(e) = register(shortcut, HotkeyTarget::Layout(l.id.clone())) {
+                tracing::warn!(layout = %l.name, "{e}");
             }
         }
     }

@@ -28,6 +28,8 @@ pub async fn apply_enabled(app: &AppHandle, id: &str) -> AppResult<Vec<String>> 
     let state = app.state::<AppState>();
     let enabled = state.module_enabled(id);
     let mut warnings = Vec::new();
+    // Starts or stops the module's background task, if it has one.
+    crate::background::reconcile(app, id);
 
     match id {
         // Hidden widgets need nothing here: widget lists are filtered by module.
@@ -37,7 +39,6 @@ pub async fn apply_enabled(app: &AppHandle, id: &str) -> AppResult<Vec<String>> 
             }
         }
         AUTOMATIONS => {
-            crate::background::reconcile(app, AUTOMATIONS);
             if let Err(e) = crate::hotkeys::sync(app).await {
                 warnings.push(e.to_string());
             }
@@ -51,7 +52,7 @@ pub async fn apply_enabled(app: &AppHandle, id: &str) -> AppResult<Vec<String>> 
             }
         }
         _ => {
-            // Any module can own automation hotkeys.
+            // Any module can own automation hotkeys; Layouts owns layout hotkeys.
             if let Err(e) = crate::hotkeys::sync(app).await {
                 warnings.push(e.to_string());
             }

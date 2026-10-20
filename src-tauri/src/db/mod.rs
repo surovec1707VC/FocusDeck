@@ -68,6 +68,7 @@ mod tests {
             [
                 "automation_logs",
                 "automations",
+                "calendar_events",
                 "clipboard_history",
                 "connector_settings",
                 "connectors",
@@ -75,11 +76,13 @@ mod tests {
                 "module_settings",
                 "modules",
                 "notes",
+                "notifications",
                 "permission_logs",
                 "permissions",
                 "settings",
                 "snippets",
                 "tasks",
+                "widget_cache",
                 "widget_layouts",
                 "widgets",
             ]

@@ -3,18 +3,19 @@
 
 use tauri::{AppHandle, Manager};
 
-use crate::modules::catalog::AUTOMATIONS;
+use crate::modules::catalog::{AUTOMATIONS, CLIPBOARD};
 use crate::state::AppState;
 
 fn spawn_for(app: &AppHandle, module_id: &str) -> Option<tauri::async_runtime::JoinHandle<()>> {
     match module_id {
         AUTOMATIONS => Some(tauri::async_runtime::spawn(crate::automation::engine::scheduler_loop(app.clone()))),
+        CLIPBOARD => Some(tauri::async_runtime::spawn(crate::widgets::clipboard::poll_loop(app.clone()))),
         _ => None,
     }
 }
 
 /// Modules that own a background task.
-pub const OWNERS: &[&str] = &[AUTOMATIONS];
+pub const OWNERS: &[&str] = &[AUTOMATIONS, CLIPBOARD];
 
 /// Starts or stops a module's task to match its enabled state.
 pub fn reconcile(app: &AppHandle, module_id: &str) {

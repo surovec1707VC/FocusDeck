@@ -1,7 +1,7 @@
 //! Read-only overview data for the Dashboard and About pages.
 
 use serde::Serialize;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager};
 
 use crate::error::AppResult;
 use crate::state::AppState;
@@ -53,10 +53,13 @@ async fn count(db: &sqlx::SqlitePool, sql: &'static str) -> AppResult<i64> {
 }
 
 #[tauri::command]
-pub async fn dashboard_stats(
-    app: AppHandle,
-    state: State<'_, AppState>,
-) -> AppResult<DashboardStats> {
+pub async fn dashboard_stats(app: AppHandle) -> AppResult<DashboardStats> {
+    stats(&app).await
+}
+
+/// Overview numbers (also the data of the «Состояние» widget).
+pub async fn stats(app: &AppHandle) -> AppResult<DashboardStats> {
+    let state = app.state::<AppState>();
     // Read the lock before any await: a held MutexGuard would make the future non-Send.
     let hotkeys_registered = state.hotkeys.lock().unwrap().len();
     let db = &state.db;
@@ -80,6 +83,6 @@ pub async fn dashboard_stats(
         permissions_granted: count(db, "SELECT COUNT(*) FROM permissions WHERE granted = 1").await?,
         permissions_total: count(db, "SELECT COUNT(*) FROM permissions").await?,
         hotkeys_registered,
-        autostart: crate::autostart::is_enabled(&app),
+        autostart: crate::autostart::is_enabled(app),
     })
 }

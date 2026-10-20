@@ -66,6 +66,26 @@ pub async fn check(app: &AppHandle, id: &str) -> AppResult<(HealthState, String)
                 Ok((HealthState::Error, "планировщик не запущен".into()))
             }
         }
+        CLIPBOARD => {
+            if crate::background::running(app, CLIPBOARD) {
+                let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM clipboard_history").fetch_one(db).await?;
+                ok(format!("запись идёт, записей: {n}"))
+            } else {
+                Ok((HealthState::Error, "фоновая задача не запущена".into()))
+            }
+        }
+        WIDGET_WEATHER => {
+            let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM widget_cache WHERE key LIKE 'weather:%'").fetch_one(db).await?;
+            ok(if n > 0 { "прогноз в кэше".into() } else { "прогноз ещё не загружался".into() })
+        }
+        WIDGET_SYSTEM_INFO => {
+            let info = tauri::async_runtime::spawn_blocking(crate::widgets::system::snapshot).await.map_err(anyhow::Error::from)?;
+            if info.ram_total > 0 {
+                ok(format!("данные Windows доступны, ядер: {}", info.cores))
+            } else {
+                Ok((HealthState::Error, "не удалось прочитать данные Windows".into()))
+            }
+        }
         TRAY => {
             if app.tray_by_id(crate::tray::TRAY_ID).is_some() {
                 ok("значок в трее".into())

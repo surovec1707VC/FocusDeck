@@ -4,7 +4,8 @@ use serde_json::{Value, json};
 
 use super::types::{Category, ModuleDef};
 use crate::permissions::{
-    PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_NOTIFICATIONS,
+    PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_LAUNCH_APPS,
+    PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS,
 };
 
 // Critical modules (confirmation required to turn off).
@@ -31,8 +32,22 @@ pub const AUTOSTART: &str = "autostart";
 pub const NOTIFICATIONS: &str = "notifications";
 pub const INTEGRATIONS: &str = "integrations";
 
+// Widget modules: one per widget kind (see `crate::widgets::catalog`).
+pub const WIDGET_DATE: &str = "widget_date";
+pub const WIDGET_WEATHER: &str = "widget_weather";
+pub const WIDGET_NOTES: &str = "widget_notes";
+pub const WIDGET_TODO: &str = "widget_todo";
+pub const WIDGET_QUICK_LINKS: &str = "widget_quick_links";
+pub const WIDGET_APP_LAUNCHER: &str = "widget_app_launcher";
+pub const WIDGET_SYSTEM_INFO: &str = "widget_system_info";
+pub const WIDGET_CLIPBOARD: &str = "widget_clipboard";
+pub const WIDGET_NOTIFICATIONS: &str = "widget_notifications";
+pub const WIDGET_CALENDAR: &str = "widget_calendar";
+pub const WIDGET_COUNTDOWN: &str = "widget_countdown";
+pub const WIDGET_STOPWATCH: &str = "widget_stopwatch";
+
 /// Features that exist only as storage/placeholder so far.
-pub const IN_DEVELOPMENT: &[&str] = &[SNIPPETS, CLIPBOARD, FILES, INTEGRATIONS];
+pub const IN_DEVELOPMENT: &[&str] = &[SNIPPETS, FILES, INTEGRATIONS];
 
 fn no_settings() -> Value {
     json!({ "type": "object", "properties": {} })
@@ -107,8 +122,9 @@ pub const BUILTIN: &[ModuleDef] = &[
     ModuleDef {
         id: DASHBOARD,
         name: "Обзор",
-        description: "Главная страница со сводкой состояния.",
-        details: "Карточки с количеством модулей, автоматизаций, задач и последние запуски автоматизаций.",
+        description: "Главная страница: сетка виджетов активного макета.",
+        details: "Виджеты можно перетаскивать, менять их размер, закреплять, сворачивать и скрывать. \
+                  Позиции сохраняются отдельно для каждого макета.",
         category: Category::Layouts,
         version: "1.0.0",
         enabled_by_default: true,
@@ -116,15 +132,17 @@ pub const BUILTIN: &[ModuleDef] = &[
         requires_restart: false,
         permissions: &[],
         settings_schema: || json!({ "type": "object", "properties": {
-            "show_recent_runs": { "type": "boolean", "title": "Показывать последние запуски", "default": true }
+            "columns": { "type": "integer", "title": "Колонок в сетке", "default": 12, "minimum": 4, "maximum": 24 },
+            "row_height": { "type": "integer", "title": "Высота строки (px)", "default": 72, "minimum": 40, "maximum": 160 },
+            "compact": { "type": "boolean", "title": "Подтягивать виджеты вверх", "default": true }
         }}),
     },
     ModuleDef {
         id: WIDGETS,
         name: "Виджеты",
-        description: "Страница виджетов активного макета.",
-        details: "Если отключить, страница «Виджеты» и все виджеты скрываются. Сами виджеты и их \
-                  содержимое сохраняются.",
+        description: "Каталог виджетов и сетка виджетов на обзоре.",
+        details: "Если отключить, страница «Виджеты» и все виджеты на обзоре скрываются. Сами \
+                  виджеты, их позиции и содержимое сохраняются.",
         category: Category::Widgets,
         version: "1.0.0",
         enabled_by_default: true,
@@ -148,6 +166,7 @@ pub const BUILTIN: &[ModuleDef] = &[
         permissions: &[],
         settings_schema: || json!({ "type": "object", "properties": {
             "show_seconds": { "type": "boolean", "title": "Показывать секунды", "default": true },
+            "hour12": { "type": "boolean", "title": "12-часовой формат", "default": false },
             "show_date": { "type": "boolean", "title": "Показывать дату", "default": true }
         }}),
     },
@@ -197,8 +216,8 @@ pub const BUILTIN: &[ModuleDef] = &[
     ModuleDef {
         id: TASKS,
         name: "Задачи",
-        description: "Быстрый список задач (виджет «Задачи»).",
-        details: "Если отключить, виджеты «Задачи» скрываются. Задачи сохраняются.",
+        description: "Хранилище задач для виджета «Список дел».",
+        details: "Если отключить, виджеты «Список дел» скрываются. Задачи сохраняются.",
         category: Category::Productivity,
         version: "1.0.0",
         enabled_by_default: true,
@@ -212,8 +231,8 @@ pub const BUILTIN: &[ModuleDef] = &[
     ModuleDef {
         id: NOTES,
         name: "Заметки",
-        description: "Текстовые заметки (виджет «Заметка»).",
-        details: "Если отключить, виджеты «Заметка» скрываются. Текст сохраняется.",
+        description: "Хранилище заметок для виджета «Заметки».",
+        details: "Если отключить, виджеты «Заметки» скрываются. Текст сохраняется.",
         category: Category::Productivity,
         version: "1.0.0",
         enabled_by_default: true,
@@ -255,15 +274,20 @@ pub const BUILTIN: &[ModuleDef] = &[
         id: CLIPBOARD,
         name: "История буфера обмена",
         description: "Локальная история скопированного текста.",
-        details: "В разработке. Потребуется разрешение «Чтение буфера обмена».",
+        details: "Фоновая задача раз в секунду проверяет, изменился ли буфер, и сохраняет текст в \
+                  локальную базу. Нужно разрешение «Чтение буфера обмена». Содержимое, которое \
+                  менеджеры паролей помечают как скрытое, не сохраняется. Если отключить, запись \
+                  прекращается, история сохраняется.",
         category: Category::Clipboard,
-        version: "0.1.0",
+        version: "1.0.0",
         enabled_by_default: false,
         critical: false,
         requires_restart: false,
         permissions: &[PERM_CLIPBOARD_READ],
         settings_schema: || json!({ "type": "object", "properties": {
-            "max_items": { "type": "integer", "title": "Хранить записей", "default": 200, "minimum": 10, "maximum": 5000 }
+            "max_items": { "type": "integer", "title": "Хранить записей", "default": 200, "minimum": 10, "maximum": 5000 },
+            "max_length": { "type": "integer", "title": "Максимальная длина записи (символов)", "default": 20000, "minimum": 100, "maximum": 100000 },
+            "skip_sensitive": { "type": "boolean", "title": "Не сохранять скрытое содержимое (пароли)", "default": true }
         }}),
     },
     ModuleDef {
@@ -352,21 +376,201 @@ pub const BUILTIN: &[ModuleDef] = &[
         permissions: &[],
         settings_schema: no_settings,
     },
+    // --- widgets (one module per widget kind) ---
+    ModuleDef {
+        id: WIDGET_DATE,
+        name: "Виджет «Дата»",
+        description: "Сегодняшняя дата, день недели и номер недели.",
+        details: "Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "show_weekday": { "type": "boolean", "title": "Показывать день недели", "default": true },
+            "show_week_number": { "type": "boolean", "title": "Показывать номер недели", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_WEATHER,
+        name: "Виджет «Погода»",
+        description: "Текущая погода и прогноз на 3 дня.",
+        details: "Погода запрашивается у open-meteo.com только при выданном разрешении «Сеть: прогноз погоды» и кэшируется: без сети показывается последний полученный прогноз. Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_NETWORK_WEATHER],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "city": { "type": "string", "title": "Город", "default": "Москва" },
+            "units": { "type": "string", "title": "Единицы", "default": "celsius", "enum": ["celsius", "fahrenheit"] },
+            "refresh_minutes": { "type": "integer", "title": "Обновлять раз в (мин)", "default": 30, "minimum": 10, "maximum": 360 }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_NOTES,
+        name: "Виджет «Заметки»",
+        description: "Текстовая заметка с автосохранением.",
+        details: "Требует модуль «Заметки». Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "monospace": { "type": "boolean", "title": "Моноширинный шрифт", "default": false },
+            "autosave_ms": { "type": "integer", "title": "Автосохранение через (мс)", "default": 800, "minimum": 300, "maximum": 5000 }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_TODO,
+        name: "Виджет «Список дел»",
+        description: "Задачи с отметкой о выполнении.",
+        details: "Требует модуль «Задачи». Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "show_counter": { "type": "boolean", "title": "Показывать счётчик", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_QUICK_LINKS,
+        name: "Виджет «Быстрые ссылки»",
+        description: "Ссылки на сайты, открываются в браузере.",
+        details: "Разрешены только адреса http, https и mailto. Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "show_urls": { "type": "boolean", "title": "Показывать адреса", "default": false }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_APP_LAUNCHER,
+        name: "Виджет «Запуск программ»",
+        description: "Кнопки запуска выбранных программ и ярлыков.",
+        details: "Нужно разрешение «Запуск программ». Запускаются только файлы, которые вы добавили сами (.exe, .lnk, .url). Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_LAUNCH_APPS],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "confirm_launch": { "type": "boolean", "title": "Спрашивать перед запуском", "default": false }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_SYSTEM_INFO,
+        name: "Виджет «Система»",
+        description: "Загрузка процессора, память, диски и батарея.",
+        details: "Данные читаются через Windows API в фоновом потоке. Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "refresh_secs": { "type": "integer", "title": "Обновлять раз в (с)", "default": 3, "minimum": 1, "maximum": 60 },
+            "show_cpu": { "type": "boolean", "title": "Процессор", "default": true },
+            "show_ram": { "type": "boolean", "title": "Память", "default": true },
+            "show_disk": { "type": "boolean", "title": "Диски", "default": true },
+            "show_battery": { "type": "boolean", "title": "Батарея", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_CLIPBOARD,
+        name: "Виджет «Буфер обмена»",
+        description: "Последние скопированные тексты: скопировать снова, закрепить, удалить.",
+        details: "Показывает историю модуля «История буфера обмена». Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "max_visible": { "type": "integer", "title": "Показывать записей", "default": 20, "minimum": 5, "maximum": 200 }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_NOTIFICATIONS,
+        name: "Виджет «Уведомления»",
+        description: "История уведомлений FocusDeck.",
+        details: "Показывает уведомления модуля «Уведомления». Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "max_visible": { "type": "integer", "title": "Показывать записей", "default": 20, "minimum": 5, "maximum": 200 },
+            "unread_only": { "type": "boolean", "title": "Только непрочитанные", "default": false }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_CALENDAR,
+        name: "Виджет «Календарь»",
+        description: "Месяц с локальными событиями.",
+        details: "Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "week_starts": { "type": "string", "title": "Первый день недели", "default": "monday", "enum": ["monday", "sunday"] },
+            "show_events": { "type": "boolean", "title": "Показывать события", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_COUNTDOWN,
+        name: "Виджет «Таймер»",
+        description: "Обратный отсчёт с уведомлением по окончании.",
+        details: "Состояние хранится в базе: таймер идёт и после перезапуска. Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "notify_on_finish": { "type": "boolean", "title": "Уведомлять по окончании", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_STOPWATCH,
+        name: "Виджет «Секундомер»",
+        description: "Секундомер с кругами.",
+        details: "Состояние хранится в базе: секундомер идёт и после перезапуска. Если отключить, виджет скрывается во всех макетах; его данные сохраняются.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "show_ms": { "type": "boolean", "title": "Показывать сотые", "default": true }
+        }}),
+    },
 ];
 
 pub fn find(id: &str) -> Option<&'static ModuleDef> {
     BUILTIN.iter().find(|m| m.id == id)
-}
-
-/// Module that owns a widget kind; the widget is hidden while it is off.
-pub fn widget_owner(kind: &str) -> Option<&'static str> {
-    match kind {
-        "clock" => Some(WIDGET_CLOCK),
-        "status" => Some(WIDGET_STATUS),
-        "tasks" => Some(TASKS),
-        "note" => Some(NOTES),
-        _ => None,
-    }
 }
 
 #[cfg(test)]
@@ -388,8 +592,9 @@ mod tests {
         // All 13 categories are used.
         let cats: HashSet<_> = BUILTIN.iter().map(|m| m.category).collect();
         assert_eq!(cats.len(), 13);
-        for kind in ["clock", "status", "tasks", "note"] {
-            assert!(ids.contains(widget_owner(kind).unwrap()));
+        for w in crate::widgets::catalog::WIDGETS {
+            assert!(ids.contains(w.module), "{}", w.kind);
+            assert!(w.requires.iter().all(|r| ids.contains(r)), "{}", w.kind);
         }
     }
 }

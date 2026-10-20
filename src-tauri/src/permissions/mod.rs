@@ -13,6 +13,8 @@ pub const PERM_GLOBAL_HOTKEYS: &str = "system.global_hotkeys";
 pub const PERM_NOTIFICATIONS: &str = "app.notifications";
 pub const PERM_CLIPBOARD_READ: &str = "clipboard.read";
 pub const PERM_FS_READ: &str = "fs.read";
+pub const PERM_NETWORK_WEATHER: &str = "network.weather";
+pub const PERM_LAUNCH_APPS: &str = "system.launch_apps";
 
 struct Definition {
     id: &'static str,
@@ -43,13 +45,26 @@ const DEFINITIONS: &[Definition] = &[
     Definition {
         id: PERM_CLIPBOARD_READ,
         name: "Чтение буфера обмена",
-        description: "Читать буфер обмена для модуля «История буфера».",
+        description: "Читать скопированный текст для модуля «История буфера обмена». Хранится только локально.",
         granted_by_default: false,
     },
     Definition {
         id: PERM_FS_READ,
         name: "Чтение файлов",
         description: "Показывать выбранные папки и файлы в модуле «Файлы».",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_NETWORK_WEATHER,
+        name: "Сеть: прогноз погоды",
+        description: "Запрашивать погоду для выбранного города у open-meteo.com (без ключей и учётных \
+                      записей). Это единственный сетевой запрос FocusDeck.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_LAUNCH_APPS,
+        name: "Запуск программ",
+        description: "Открывать программы и ярлыки, которые вы сами добавили в виджет «Запуск программ».",
         granted_by_default: false,
     },
 ];

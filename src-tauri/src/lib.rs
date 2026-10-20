@@ -10,11 +10,13 @@ mod hotkeys;
 mod info;
 mod logging;
 mod modules;
+mod notifications;
 mod permissions;
 mod plugins;
 mod settings;
 mod state;
 mod tray;
+mod widgets;
 mod window;
 mod workspace;
 
@@ -137,13 +139,19 @@ pub fn run() {
             workspace::layouts_list,
             workspace::layouts_create,
             workspace::layouts_rename,
+            workspace::layouts_duplicate,
             workspace::layouts_activate,
             workspace::layouts_delete,
-            workspace::widgets_list,
-            workspace::widgets_add,
-            workspace::widgets_update,
-            workspace::widgets_move,
-            workspace::widgets_remove,
+            workspace::layouts_set_hotkey,
+            widgets::widget_catalog,
+            widgets::widgets_list,
+            widgets::widgets_add,
+            widgets::widgets_update,
+            widgets::widgets_save_grid,
+            widgets::widgets_remove,
+            widgets::widget_data,
+            widgets::widget_action,
+            widgets::widget_pick_app,
             workspace::tasks_list,
             workspace::tasks_add,
             workspace::tasks_toggle,

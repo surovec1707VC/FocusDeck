@@ -4,9 +4,8 @@
 use std::time::Duration;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
-use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 
 use super::store;
 use super::types::{Action, Automation, Trigger};
@@ -15,15 +14,6 @@ use crate::modules::catalog::{AUTOMATIONS, NOTIFICATIONS};
 use crate::modules::registry;
 use crate::permissions::{self, PERM_NOTIFICATIONS};
 use crate::state::AppState;
-
-pub const NOTIFY_EVENT: &str = "focusdeck://notify";
-
-#[derive(Debug, Clone, Serialize)]
-pub struct Notification {
-    pub title: String,
-    pub body: String,
-    pub source: String,
-}
 
 /// Parses RFC 3339 or SQLite's `datetime('now')` format (UTC).
 pub fn parse_ts(value: &str) -> Option<DateTime<Utc>> {
@@ -147,11 +137,7 @@ async fn execute(app: &AppHandle, a: &Automation, action: &Action) -> AppResult<
                 return Ok(());
             }
             permissions::require(db, PERM_NOTIFICATIONS, &format!("automation:{}", a.id)).await?;
-            app.emit(
-                NOTIFY_EVENT,
-                Notification { title: title.clone(), body: body.clone(), source: a.name.clone() },
-            )
-            .map_err(anyhow::Error::from)?;
+            crate::notifications::push(app, "info", title, body, &a.name).await?;
         }
         Action::Log { message } => tracing::info!(automation = %a.name, "{message}"),
         Action::ShowWindow => crate::window::show(app),
