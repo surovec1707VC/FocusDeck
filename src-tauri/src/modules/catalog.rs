@@ -24,6 +24,7 @@ pub const TASKS: &str = "tasks";
 pub const NOTES: &str = "notes";
 pub const SNIPPETS: &str = "snippets";
 pub const TIMERS: &str = "timers";
+pub const ORGANIZER: &str = "desktop_organizer";
 pub const LOGGING: &str = "logging";
 pub const CLIPBOARD: &str = "clipboard_history";
 pub const FILES: &str = "files";
@@ -332,6 +333,35 @@ pub const BUILTIN: &[ModuleDef] = &[
             "open_hotkey": { "type": "string", "title": "Горячая клавиша открытия (пусто — нет)", "default": "Ctrl+Alt+V" },
             "private_minutes": { "type": "integer", "title": "Private Mode по умолчанию, минут (0 — до выключения)", "default": 15, "minimum": 0, "maximum": 1440 },
             "command_timeout_secs": { "type": "integer", "title": "Таймаут команды быстрого действия, с", "default": 60, "minimum": 5, "maximum": 600 }
+        }}),
+    },
+    ModuleDef {
+        id: ORGANIZER,
+        name: "Desktop Organizer",
+        description: "Сортировка файлов рабочего стола по папкам с предпросмотром и отменой.",
+        details: "Раскладывает скриншоты, изображения, документы, архивы, установщики, видео, музыку и \
+                  код по папкам по правилам. Файлы только перемещаются, никогда не удаляются; каждое \
+                  перемещение записывается в журнал и может быть отменено. Ярлыки, скрытые и системные \
+                  файлы не трогаются. Если отключить модуль, расписание и проверка лимита \
+                  останавливаются, страница скрывается; журнал и правила сохраняются.",
+        category: Category::Files,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "target_root": { "type": "string", "title": "Корневая папка для сортировки ({root})", "default": "%USERPROFILE%\\Documents\\Desktop Organizer" },
+            "exclude_patterns": { "type": "string", "title": "Исключения (маски через запятую)", "default": "*.lnk, *.url, desktop.ini, ~$*, *.crdownload, *.part, *.tmp" },
+            "min_age_minutes": { "type": "integer", "title": "Не трогать файлы моложе (мин)", "default": 5, "minimum": 0, "maximum": 1440 },
+            "auto_mode": { "type": "string", "title": "Автоматические запуски", "default": "preview", "enum": ["preview", "move"] },
+            "schedule_enabled": { "type": "boolean", "title": "По расписанию", "default": false },
+            "schedule_time": { "type": "string", "title": "Время (ЧЧ:ММ)", "default": "18:00" },
+            "schedule_weekdays_only": { "type": "boolean", "title": "Только по будням", "default": true },
+            "run_on_login": { "type": "boolean", "title": "При входе в систему", "default": false },
+            "limit_enabled": { "type": "boolean", "title": "При превышении лимита файлов", "default": false },
+            "file_limit": { "type": "integer", "title": "Лимит файлов на рабочем столе", "default": 40, "minimum": 5, "maximum": 1000 },
+            "notify": { "type": "boolean", "title": "Уведомления", "default": true }
         }}),
     },
     ModuleDef {

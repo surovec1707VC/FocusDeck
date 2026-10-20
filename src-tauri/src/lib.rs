@@ -13,6 +13,7 @@ mod info;
 mod logging;
 mod modules;
 mod notifications;
+mod organizer;
 mod permissions;
 mod plugins;
 mod productivity;
@@ -214,6 +215,24 @@ pub fn run() {
             clipboard_hub::quick_actions_reorder,
             clipboard_hub::quick_actions_run,
             clipboard_hub::quick_actions_pick,
+            organizer::organizer_preview,
+            organizer::organizer_apply,
+            organizer::organizer_run_now,
+            organizer::organizer_pending,
+            organizer::organizer_dismiss_pending,
+            organizer::organizer_operations,
+            organizer::organizer_moves,
+            organizer::organizer_undo_last,
+            organizer::organizer_undo_operation,
+            organizer::organizer_restore,
+            organizer::organizer_rules,
+            organizer::organizer_save_rule,
+            organizer::organizer_delete_rule,
+            organizer::organizer_reorder_rules,
+            organizer::organizer_reset_rules,
+            organizer::organizer_exclude,
+            organizer::organizer_paths,
+            organizer::organizer_open_folder,
             workspace::tasks_list,
             workspace::tasks_add,
             workspace::tasks_toggle,
