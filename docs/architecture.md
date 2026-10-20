@@ -1,6 +1,6 @@
 # Архитектура FocusDeck
 
-Локальное desktop-приложение для Windows 10/11 на Tauri 2. **Без ИИ, телеметрии, аналитики, облачной синхронизации и сбора данных**: все данные лежат в локальной SQLite, сеть не используется.
+Локальное desktop-приложение для Windows 10/11 на Tauri 2. **Без ИИ, телеметрии, аналитики, облачной синхронизации и сбора данных**: все данные лежат в локальной SQLite. В сеть обращается только виджет «Погода» (open-meteo.com) и только с разрешением «Сеть: прогноз погоды».
 
 ## Backend (`src-tauri/src`)
 
@@ -13,9 +13,11 @@
 | `db/` | пул SQLite (WAL, foreign keys) и миграции `db/migrations/*.sql`, применяются при каждом старте |
 | `settings/` | типизированные настройки (`AppSettings`), хранятся «ключ → JSON» в таблице `settings` |
 | `permissions/` | разрешения и журнал их изменений; отзыв разрешения выключает функцию |
-| `modules/` | **Module Registry**: `catalog` (21 модуль), `schema` (настройки), `registry` (БД и журнал), `effects` (что происходит при вкл/выкл), `health`, `config` (экспорт/импорт). API — [api.md](api.md) |
+| `modules/` | **Module Registry**: `catalog` (33 модуля), `schema` (настройки), `registry` (БД и журнал), `effects` (что происходит при вкл/выкл), `health`, `config` (экспорт/импорт). API — [api.md](api.md) |
 | `background.rs` | фоновые задачи модулей: запускаются и останавливаются вместе с модулем |
-| `workspace/` | макеты, виджеты, быстрые задачи |
+| `workspace/` | макеты (профили, готовые наборы, дублирование, горячие клавиши) и задачи |
+| `widgets/` | **система виджетов**: `catalog` (14 типов), `grid`, `data` (данные и действия), `system` (CPU/RAM/диски/батарея через Windows API), `clipboard` (история буфера), `weather` (погода с кэшем). API — [widgets.md](widgets.md) |
+| `notifications.rs` | история уведомлений + тосты |
 | `automation/` | автоматизации: `types` (триггеры/действия + валидация), `store` (БД), `engine` (запуск при старте, по расписанию каждые 30 с, по хоткею; журнал) |
 | `hotkeys.rs` | глобальные горячие клавиши: показ/скрытие окна + хоткеи автоматизаций |
 | `tray.rs` | значок в трее: клик — показать/скрыть, меню «Показать / Свернуть / Настройки / Выход» |
@@ -40,7 +42,9 @@
 | `system.global_hotkeys` | выдано | глобальные хоткеи |
 | `system.autostart` | нет | автозапуск с Windows |
 | `app.notifications` | выдано | уведомления от автоматизаций (внутри окна) |
-| `clipboard.read` | нет | модуль «История буфера» (в разработке) |
+| `clipboard.read` | нет | модуль «История буфера обмена» |
+| `network.weather` | нет | виджет «Погода» |
+| `system.launch_apps` | нет | виджет «Запуск программ» |
 
 Включение функции в «Настройках» считается согласием и выдаёт разрешение (источник `settings`). Каждое изменение и каждый отказ пишется в `permission_logs`.
 
@@ -50,11 +54,11 @@
 - Если модуль «Автоматизации» выключен, запуск записывается как `skipped`. Журнал ограничен 500 записями на автоматизацию.
 
 ## База данных
-Файл `%APPDATA%\com.focusdeck.app\focusdeck.sqlite`. Миграция `0001_init.sql` создаёт 15 таблиц: settings, modules, module_settings, widget_layouts, widgets, automations, automation_logs, tasks, notes, snippets, clipboard_history, permissions, permission_logs, connectors, connector_settings.
+Файл `%APPDATA%\com.focusdeck.app\focusdeck.sqlite`. Миграция `0001_init.sql` создаёт 15 таблиц; `0003_widget_system.sql` добавляет сетку виджетов, профили макетов, `widget_cache`, `calendar_events`, `notifications`. Исходно: settings, modules, module_settings, widget_layouts, widgets, automations, automation_logs, tasks, notes, snippets, clipboard_history, permissions, permission_logs, connectors, connector_settings.
 
-Таблицы notes, snippets, clipboard_history, connectors и connector_settings пока только схема, без интерфейса. Коннекторы предназначены для локальных интеграций, без облака.
+Таблицы snippets, connectors и connector_settings пока только схема, без интерфейса. Коннекторы предназначены для локальных интеграций, без облака.
 
-Новая миграция — следующий файл `src-tauri/src/db/migrations/0003_*.sql`. Уже применённые миграции не редактируйте: sqlx проверяет их контрольные суммы.
+Новая миграция — следующий файл `src-tauri/src/db/migrations/0004_*.sql`. Уже применённые миграции не редактируйте: sqlx проверяет их контрольные суммы.
 
 ## Frontend (`src`)
 | Путь | Назначение |
@@ -73,4 +77,4 @@
 Безопасность: CSP разрешает только локальные ресурсы и IPC. Фронтенду выданы лишь права на управление окном (перетаскивание, свернуть, развернуть, закрыть) и `opener` (показать файл в папке). Хоткеи, автозапуск и состояние окна доступны только из Rust.
 
 ## Тесты
-`cd src-tauri && cargo test --lib` — 26 тестов, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), ошибки.
+`cd src-tauri && cargo test --lib` — 43 теста, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), ошибки.
