@@ -200,18 +200,22 @@ pub const BUILTIN: &[ModuleDef] = &[
     ModuleDef {
         id: AUTOMATIONS,
         name: "Автоматизации",
-        description: "Правила «триггер → действие» и фоновый планировщик.",
-        details: "Если отключить: планировщик останавливается, автоматизации не выполняются, их \
-                  горячие клавиши снимаются. Сами правила сохраняются.",
+        description: "Сценарии «триггер → условия → действия» и наблюдатель событий Windows.",
+        details: "Фоновая задача раз в секунду следит за активным окном, процессами, мониторами, \
+                  сетью, временем и интервалами. Опасные действия (закрытие программ, команды, \
+                  удаление файлов, запуск скриптов) выполняются только после подтверждения. Если \
+                  отключить: наблюдатель останавливается, автоматизации не выполняются, их горячие \
+                  клавиши снимаются. Сами сценарии сохраняются.",
         category: Category::Automations,
-        version: "1.0.0",
+        version: "2.0.0",
         enabled_by_default: true,
         critical: false,
         requires_restart: false,
         permissions: &[],
         settings_schema: || json!({ "type": "object", "properties": {
             "scheduler_interval_secs": { "type": "integer", "title": "Период проверки расписания (с)", "default": 30, "minimum": 10, "maximum": 600 },
-            "max_log_entries": { "type": "integer", "title": "Записей журнала на автоматизацию", "default": 500, "minimum": 50, "maximum": 5000 }
+            "max_log_entries": { "type": "integer", "title": "Записей журнала на автоматизацию", "default": 500, "minimum": 50, "maximum": 5000 },
+            "command_timeout_secs": { "type": "integer", "title": "Таймаут команды терминала (с)", "default": 60, "minimum": 5, "maximum": 600 }
         }}),
     },
     ModuleDef {

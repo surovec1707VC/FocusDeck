@@ -7,6 +7,7 @@ mod background;
 mod clipboard_hub;
 mod db;
 mod error;
+mod focus;
 mod hotkeys;
 mod info;
 mod logging;
@@ -222,8 +223,18 @@ pub fn run() {
             automation::automations_update,
             automation::automations_set_enabled,
             automation::automations_delete,
-            automation::automations_run_now,
+            automation::automations_reorder,
+            automation::automations_run,
+            automation::automations_test,
             automation::automations_logs,
+            automation::automations_pending,
+            automation::automations_confirm,
+            automation::automations_templates,
+            automation::automations_install_template,
+            automation::automations_schema,
+            automation::automations_pick,
+            focus::focus_mode_get,
+            focus::focus_mode_set,
         ])
         .build(tauri::generate_context!())
         .expect("error while building FocusDeck")

@@ -40,7 +40,7 @@ pub async fn push(app: &AppHandle, level: &str, title: &str, body: &str, source:
         return Ok(false);
     }
     save(db, level, title, body, source).await?;
-    if !permissions::is_granted(db, PERM_NOTIFICATIONS).await? {
+    if !permissions::is_granted(db, PERM_NOTIFICATIONS).await? || !crate::focus::allows_toast(source) {
         return Ok(false);
     }
     app.emit(NOTIFY_EVENT, Toast { title: title.into(), body: body.into(), source: source.into() })

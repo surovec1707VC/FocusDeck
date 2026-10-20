@@ -17,6 +17,8 @@ pub const PERM_NETWORK_WEATHER: &str = "network.weather";
 pub const PERM_LAUNCH_APPS: &str = "system.launch_apps";
 pub const PERM_PASTE: &str = "system.paste";
 pub const PERM_RUN_COMMANDS: &str = "system.run_commands";
+pub const PERM_CLOSE_APPS: &str = "system.close_apps";
+pub const PERM_DELETE_FILES: &str = "files.delete";
 
 struct Definition {
     id: &'static str,
@@ -78,7 +80,19 @@ const DEFINITIONS: &[Definition] = &[
     Definition {
         id: PERM_RUN_COMMANDS,
         name: "Выполнение команд",
-        description: "Запускать команды терминала из быстрых действий. Каждый запуск подтверждается отдельно.",
+        description: "Запускать команды терминала из быстрых действий и автоматизаций. Каждый запуск подтверждается отдельно.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_CLOSE_APPS,
+        name: "Закрытие программ",
+        description: "Автоматизации могут закрывать программы по имени процесса. Каждый запуск подтверждается.",
+        granted_by_default: false,
+    },
+    Definition {
+        id: PERM_DELETE_FILES,
+        name: "Удаление файлов",
+        description: "Автоматизации могут перемещать файлы в Корзину (например, очистка рабочего стола). Каждый запуск подтверждается.",
         granted_by_default: false,
     },
 ];

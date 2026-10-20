@@ -235,7 +235,7 @@ fn truncate(bytes: &[u8]) -> String {
 }
 
 /// `cmd /C` in a hidden window; output decoded from UTF-8 or the OEM code page; killed after `timeout`.
-async fn run_command(command: &str, timeout: Duration) -> AppResult<CommandOutput> {
+pub(crate) async fn run_command(command: &str, timeout: Duration) -> AppResult<CommandOutput> {
     let mut cmd = tokio::process::Command::new("cmd");
     cmd.arg("/D").arg("/C");
     // Raw: cmd parses its own command line, Rust's quoting would break it.

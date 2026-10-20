@@ -322,6 +322,17 @@ mod imp {
         }
     }
 
+    /// (exe, title) of the foreground window.
+    pub fn foreground() -> (String, String) {
+        // SAFETY: plain window queries.
+        unsafe {
+            let fg = GetForegroundWindow();
+            let mut title = [0u16; 512];
+            let n = if fg.is_null() { 0 } else { GetWindowTextW(fg, title.as_mut_ptr(), title.len() as i32) };
+            (exe_of_window(fg), String::from_utf16_lossy(&title[..n.max(0) as usize]))
+        }
+    }
+
     /// (exe of the clipboard owner or the foreground window, foreground window title).
     pub fn source() -> (String, String) {
         // SAFETY: plain window queries.
@@ -355,6 +366,9 @@ mod stub {
         Err("поддерживается только в Windows".into())
     }
     pub fn source() -> (String, String) {
+        (String::new(), String::new())
+    }
+    pub fn foreground() -> (String, String) {
         (String::new(), String::new())
     }
 }
