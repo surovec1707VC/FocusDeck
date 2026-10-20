@@ -276,12 +276,192 @@ export interface PickedApp {
   path: string;
 }
 
+export type TaskStatus = "todo" | "in_progress" | "done" | "cancelled";
+export type Recurrence = "none" | "daily" | "weekdays" | "weekly" | "monthly";
+
 export interface Task {
   id: string;
   title: string;
   done: boolean;
+  status: TaskStatus;
+  /** 0 none … 3 high */
+  priority: number;
+  /** YYYY-MM-DD */
+  due_at: string | null;
+  /** "Работа/Отчёты" */
+  category: string;
+  recurrence: Recurrence;
+  notes: string;
   position: number;
   created_at: string;
+  completed_at: string | null;
+}
+
+export interface TaskFilter {
+  status?: "open" | "all" | TaskStatus;
+  priority?: number;
+  category?: string;
+  due?: "today" | "overdue" | "week" | "none";
+  search?: string;
+}
+
+export interface TaskInput {
+  title?: string;
+  status?: TaskStatus;
+  priority?: number;
+  due_at?: string | null;
+  category?: string;
+  recurrence?: Recurrence;
+  notes?: string;
+}
+
+export interface TaskStats {
+  completed_today: number;
+  created_today: number;
+  open: number;
+  in_progress: number;
+  overdue: number;
+  due_today: number;
+  by_priority: [number, number, number, number];
+  last_7_days: { date: string; count: number }[];
+  categories: string[];
+}
+
+export interface QuickTask {
+  title: string;
+  priority: number | null;
+  due: string | null;
+  category: string | null;
+  recurrence: Recurrence | null;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  body: string;
+  pinned: boolean;
+  tags: string[];
+  project: string;
+  layout_id: string | null;
+  deleted_at: string | null;
+  /** Belongs to a dashboard widget. */
+  widget: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteFilter {
+  search?: string;
+  tag?: string;
+  project?: string;
+  layout_id?: string;
+  trash?: boolean;
+}
+
+export interface NoteInput {
+  title?: string;
+  body?: string;
+  tags?: string[];
+  pinned?: boolean;
+  project?: string;
+  layout_id?: string | null;
+}
+
+export interface NoteFacets {
+  tags: [string, number][];
+  projects: string[];
+  trash: number;
+}
+
+export interface Snippet {
+  id: string;
+  title: string;
+  body: string;
+  shortcut: string | null;
+  tags: string[];
+  /** Variables to fill in (built-ins excluded). */
+  variables: string[];
+  use_count: number;
+  updated_at: string;
+}
+
+export interface SnippetInput {
+  title: string;
+  body: string;
+  shortcut?: string | null;
+  tags: string[];
+}
+
+export interface SnippetImportReport {
+  imported: number;
+  duplicates: number;
+  skipped: string[];
+}
+
+export type TimerPhase = "work" | "short_break" | "long_break";
+
+export interface Timer {
+  id: string;
+  name: string;
+  kind: "countdown" | "pomodoro";
+  duration_ms: number;
+  work_ms: number;
+  short_break_ms: number;
+  long_break_ms: number;
+  rounds: number;
+  phase: TimerPhase;
+  round: number;
+  running: boolean;
+  ends_at: number | null;
+  remaining_ms: number | null;
+  phase_started_at: number | null;
+}
+
+export interface TimerInput {
+  name: string;
+  kind: "countdown" | "pomodoro";
+  duration_ms?: number;
+  work_ms?: number;
+  short_break_ms?: number;
+  long_break_ms?: number;
+  rounds?: number;
+}
+
+export interface Stopwatch {
+  id: string;
+  name: string;
+  elapsed_ms: number;
+  started_at: number | null;
+  laps: number[];
+}
+
+export interface TimersState {
+  timers: Timer[];
+  stopwatches: Stopwatch[];
+  stats: { pomodoros_today: number; focus_ms_today: number; sessions_today: number };
+  now_ms: number;
+}
+
+export interface TimerSession {
+  id: number;
+  timer_id: string | null;
+  timer_name: string;
+  kind: "countdown" | TimerPhase;
+  planned_ms: number;
+  actual_ms: number;
+  completed: boolean;
+  started_at: string;
+  ended_at: string;
+}
+
+export interface StopwatchResult {
+  id: number;
+  stopwatch_id: string | null;
+  name: string;
+  total_ms: number;
+  laps_json: string;
+  note: string;
+  saved_at: string;
 }
 
 export type Trigger =
@@ -387,6 +567,51 @@ export const api = {
   tasksToggle: (id: string) => call<Task[]>("tasks_toggle", { id }),
   tasksDelete: (id: string) => call<Task[]>("tasks_delete", { id }),
 
+  // Notes
+  notesList: (filter?: NoteFilter) => call<Note[]>("notes_list", { filter }),
+  notesFacets: () => call<NoteFacets>("notes_facets"),
+  notesCreate: (input: NoteInput) => call<Note>("notes_create", { input }),
+  notesUpdate: (id: string, input: NoteInput) => call<Note>("notes_update", { id, input }),
+  notesTrash: (id: string) => call<void>("notes_trash", { id }),
+  notesRestore: (id: string) => call<void>("notes_restore", { id }),
+  notesDeleteForever: (id: string) => call<void>("notes_delete_forever", { id }),
+  notesEmptyTrash: () => call<number>("notes_empty_trash"),
+  notesExport: (id: string, format: "md" | "txt") => call<string | null>("notes_export", { id, format }),
+
+  // Tasks
+  tasksQuery: (filter?: TaskFilter) => call<Task[]>("tasks_query", { filter }),
+  tasksCreate: (input: TaskInput) => call<Task>("tasks_create", { input }),
+  tasksQuickAdd: (line: string) => call<Task>("tasks_quick_add", { line }),
+  tasksQuickParse: (line: string) => call<QuickTask>("tasks_quick_parse", { line }),
+  tasksUpdate: (id: string, input: TaskInput) => call<Task>("tasks_update", { id, input }),
+  tasksRemove: (id: string) => call<void>("tasks_remove", { id }),
+  tasksStats: () => call<TaskStats>("tasks_stats"),
+
+  // Snippets
+  snippetsList: (search?: string, tag?: string) => call<Snippet[]>("snippets_list", { search, tag }),
+  snippetsSave: (input: SnippetInput, id?: string) => call<Snippet>("snippets_save", { id, input }),
+  snippetsDelete: (id: string) => call<void>("snippets_delete", { id }),
+  snippetsRender: (id: string, values?: Record<string, string>) => call<string>("snippets_render", { id, values }),
+  snippetsCopy: (id: string, values?: Record<string, string>) => call<string>("snippets_copy", { id, values }),
+  snippetsPaste: (id: string, values?: Record<string, string>) => call<void>("snippets_paste", { id, values }),
+  snippetsExport: () => call<string | null>("snippets_export"),
+  snippetsImport: () => call<SnippetImportReport | null>("snippets_import"),
+
+  // Timers and stopwatches
+  timersState: () => call<TimersState>("timers_state"),
+  timersSave: (input: TimerInput, id?: string) => call<TimersState>("timers_save", { id, input }),
+  timersControl: (id: string, action: "start" | "pause" | "reset" | "skip") => call<TimersState>("timers_control", { id, action }),
+  timersDelete: (id: string) => call<TimersState>("timers_delete", { id }),
+  timerSessions: (limit = 100) => call<TimerSession[]>("timer_sessions", { limit }),
+  timerSessionsClear: () => call<void>("timer_sessions_clear"),
+  stopwatchesCreate: (name: string) => call<TimersState>("stopwatches_create", { name }),
+  stopwatchesRename: (id: string, name: string) => call<TimersState>("stopwatches_rename", { id, name }),
+  stopwatchesControl: (id: string, action: "start" | "pause" | "reset" | "lap") => call<TimersState>("stopwatches_control", { id, action }),
+  stopwatchesDelete: (id: string) => call<TimersState>("stopwatches_delete", { id }),
+  stopwatchesSaveResult: (id: string, note?: string) => call<StopwatchResult[]>("stopwatches_save_result", { id, note }),
+  stopwatchResults: (limit = 100) => call<StopwatchResult[]>("stopwatch_results", { limit }),
+  stopwatchResultsDelete: (id: number) => call<StopwatchResult[]>("stopwatch_results_delete", { id }),
+
   automationsList: () => call<Automation[]>("automations_list"),
   automationsCreate: (input: AutomationInput) => call<Automation>("automations_create", { input }),
   automationsUpdate: (id: string, input: AutomationInput) => call<Automation>("automations_update", { id, input }),
@@ -403,4 +628,5 @@ export const EVENTS = {
   settingsChanged: "focusdeck://settings-changed",
   layoutChanged: "focusdeck://layout-changed",
   clipboardChanged: "focusdeck://clipboard-changed",
+  timersChanged: "focusdeck://timers-changed",
 } as const;

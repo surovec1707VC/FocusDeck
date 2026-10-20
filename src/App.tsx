@@ -12,6 +12,10 @@ import ModuleGate from "./components/ModuleGate";
 import Dashboard from "./pages/Dashboard";
 import Layouts from "./pages/Layouts";
 import Modules from "./pages/Modules";
+import Notes from "./pages/Notes";
+import Snippets from "./pages/Snippets";
+import Tasks from "./pages/Tasks";
+import Timers from "./pages/Timers";
 import Permissions from "./pages/Permissions";
 import Settings from "./pages/Settings";
 import Widgets from "./pages/Widgets";
@@ -44,6 +48,10 @@ export default function App() {
               <Route path="/" element={<ModuleGate id="dashboard"><Dashboard /></ModuleGate>} />
               <Route path="/widgets" element={<ModuleGate id="widgets"><Widgets /></ModuleGate>} />
               <Route path="/layouts" element={<ModuleGate id="layouts"><Layouts /></ModuleGate>} />
+              <Route path="/notes" element={<ModuleGate id="notes"><Notes /></ModuleGate>} />
+              <Route path="/tasks" element={<ModuleGate id="tasks"><Tasks /></ModuleGate>} />
+              <Route path="/snippets" element={<ModuleGate id="snippets"><Snippets /></ModuleGate>} />
+              <Route path="/timers" element={<ModuleGate id="timers"><Timers /></ModuleGate>} />
               <Route path="/automations" element={<ModuleGate id="automations"><Automations /></ModuleGate>} />
               {/* Always reachable: modules can be switched back on here. */}
               <Route path="/control-center" element={<ControlCenter />} />
