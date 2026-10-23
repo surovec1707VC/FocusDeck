@@ -31,7 +31,8 @@ pub async fn seed(pool: &SqlitePool) -> AppResult<()> {
         .bind(m.name)
         .bind(m.description)
         .bind(serde_json::to_value(m.category)?.as_str().unwrap_or_default().to_string())
-        .bind(m.enabled_by_default)
+        // A release build that knows its update server starts with updates on.
+        .bind(m.enabled_by_default || (m.id == catalog::UPDATES && crate::updates::configured()))
         .bind(m.critical)
         .bind(m.version)
         .bind(m.requires_restart)

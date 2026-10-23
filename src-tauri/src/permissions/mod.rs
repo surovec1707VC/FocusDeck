@@ -202,7 +202,7 @@ pub async fn seed(pool: &SqlitePool) -> AppResult<()> {
         .bind(d.id)
         .bind(d.name)
         .bind(d.description)
-        .bind(d.granted_by_default)
+        .bind(d.granted_by_default || (d.id == PERM_NETWORK_UPDATES && crate::updates::configured()))
         .execute(pool)
         .await?;
     }

@@ -1094,6 +1094,7 @@ export const EVENTS = {
   organizerChanged: "focusdeck://organizer-changed",
   actionLog: "focusdeck://action-log",
   terminalOutput: "focusdeck://terminal-output",
+  updateAvailable: "focusdeck://update-available",
 } as const;
 
 // --- Developer Tools ---

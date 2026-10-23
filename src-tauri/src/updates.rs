@@ -178,9 +178,12 @@ pub async fn updates_rollback(app: AppHandle, confirm: bool) -> AppResult<Previo
     Ok(prev)
 }
 
-/// Optional check at start (module setting `auto_check`); a found update becomes a notification.
+pub const EVENT_AVAILABLE: &str = "focusdeck://update-available";
+
+/// Optional check at start (module setting `auto_check`); a found update opens a dialog
+/// in the window and also becomes a notification.
 pub async fn startup_check(app: AppHandle) {
-    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(8)).await;
     let db = app.state::<AppState>().db.clone();
     let auto = registry::settings(&db, UPDATES).await.ok().and_then(|s| s.get("auto_check").and_then(Value::as_bool)).unwrap_or(false);
     if !auto || require(&app).await.is_err() {
@@ -188,6 +191,8 @@ pub async fn startup_check(app: AppHandle) {
     }
     match updates_check(app.clone()).await {
         Ok(UpdateInfo { available: Some(a), .. }) => {
+            use tauri::Emitter;
+            let _ = app.emit(EVENT_AVAILABLE, &a);
             let _ = crate::notifications::push(&app, "info", "Доступно обновление", &format!("FocusDeck {} — откройте «Обновления»", a.version), "updates").await;
         }
         Ok(_) => {}

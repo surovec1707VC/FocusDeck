@@ -7,6 +7,7 @@ import CrashNotice from "./components/shell/CrashNotice";
 import ErrorBoundary from "./components/shell/ErrorBoundary";
 import Onboarding from "./components/shell/Onboarding";
 import ShortcutsHelp from "./components/shell/ShortcutsHelp";
+import UpdateAvailable from "./components/shell/UpdateAvailable";
 import { ErrorBanner, Spinner } from "./components/ui";
 import { ONBOARDING_KEY, Shell, ShellContext, store } from "./lib/shell-context";
 import { t } from "./i18n";
@@ -134,6 +135,7 @@ export default function App() {
       </div>
       <Toasts />
       <AutomationConfirm />
+      <UpdateAvailable />
       <CommandPalette open={overlay === "palette"} onClose={closeOverlay} onError={setShellError} />
       <ShortcutsHelp open={overlay === "shortcuts"} onClose={closeOverlay} />
       <Onboarding open={overlay === "onboarding"} onClose={closeOverlay} />

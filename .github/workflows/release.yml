@@ -1,0 +1,54 @@
+# Builds a signed NSIS installer and publishes a GitHub Release with latest.json.
+# Installed copies of FocusDeck read latest.json at startup and offer the update.
+#
+# To release: bump "version" in package.json, src-tauri/tauri.conf.json and
+# src-tauri/Cargo.toml, commit, then push a tag: git tag v0.2.0 && git push origin v0.2.0
+#
+# Repository secrets: TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD,
+# FOCUSDECK_UPDATER_PUBKEY (see docs/release.md).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          FOCUSDECK_UPDATER_PUBKEY: ${{ secrets.FOCUSDECK_UPDATER_PUBKEY }}
+          FOCUSDECK_UPDATE_ENDPOINT: https://github.com/${{ github.repository }}/releases/latest/download/latest.json
+          FOCUSDECK_RELEASES_URL: https://github.com/${{ github.repository }}/releases
+        with:
+          tagName: v__VERSION__
+          releaseName: FocusDeck v__VERSION__
+          releaseBody: "Что нового — см. CHANGELOG.md."
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          # Updater artifacts (.sig) only in CI, so local builds work without the key.
+          args: --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":true}}'

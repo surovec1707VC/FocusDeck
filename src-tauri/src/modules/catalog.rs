@@ -492,7 +492,7 @@ pub const BUILTIN: &[ModuleDef] = &[
         description: "Проверка новой версии, список изменений, установка и откат.",
         details: "Обращается к серверу релизов только при выданном разрешении «Сеть: проверка обновлений». \
                   Пакет обновления проверяется по цифровой подписи. Перед установкой база данных копируется — \
-                  это точка отката. Автоматическая проверка при запуске включается в настройках модуля; \
+                  это точка отката. В релизной сборке проверка при запуске включена; найденное обновление показывается окном, \
                   установка всегда требует подтверждения. Если отключить, проверки не выполняются.",
         category: Category::PrivacySecurity,
         version: "1.0.0",
@@ -501,7 +501,7 @@ pub const BUILTIN: &[ModuleDef] = &[
         requires_restart: false,
         permissions: &[PERM_NETWORK_UPDATES],
         settings_schema: || json!({ "type": "object", "properties": {
-            "auto_check": { "type": "boolean", "title": "Проверять при запуске", "default": false }
+            "auto_check": { "type": "boolean", "title": "Проверять при запуске", "default": crate::updates::configured() }
         }}),
     },
     // --- Developer Tools ---
