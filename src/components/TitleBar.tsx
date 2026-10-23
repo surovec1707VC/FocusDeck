@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Copy, Minus, Square, X } from "lucide-react";
+import logo from "../assets/logo.svg";
 import { t } from "../i18n";
 
 const win = getCurrentWindow();
@@ -27,7 +28,7 @@ export default function TitleBar({ onMaximizedChange }: { onMaximizedChange: (m:
   return (
     <div data-tauri-drag-region className="flex h-9 shrink-0 items-center border-b border-zinc-200/70 dark:border-zinc-800/70">
       <div data-tauri-drag-region className="flex items-center gap-2 px-3 text-xs font-semibold tracking-wide text-zinc-600 dark:text-zinc-300">
-        <span data-tauri-drag-region className="size-2.5 rounded-full bg-accent-500" />
+        <img data-tauri-drag-region src={logo} alt="" className="size-4" draggable={false} />
         {t.app.name}
       </div>
       <div data-tauri-drag-region className="h-full flex-1" />

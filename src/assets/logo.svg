@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- FocusDeck app icon: a deck of cards with a focus target. Source for `tauri icon`. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d7cff"/>
+      <stop offset="0.55" stop-color="#5146e5"/>
+      <stop offset="1" stop-color="#3b1fb8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.2" r="0.8">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e7e9ff"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d7cff"/>
+      <stop offset="1" stop-color="#4527c9"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#1b0b66" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle background -->
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#bg)"/>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#glow)"/>
+
+  <!-- Back cards of the deck -->
+  <g transform="rotate(-14 512 540)">
+    <rect x="262" y="250" width="500" height="560" rx="72" fill="#ffffff" fill-opacity="0.22"/>
+  </g>
+  <g transform="rotate(-7 512 540)">
+    <rect x="262" y="250" width="500" height="560" rx="72" fill="#ffffff" fill-opacity="0.42"/>
+  </g>
+
+  <!-- Front card -->
+  <g filter="url(#shadow)">
+    <rect x="262" y="250" width="500" height="560" rx="72" fill="url(#card)"/>
+  </g>
+
+  <!-- Focus target -->
+  <circle cx="512" cy="500" r="150" fill="none" stroke="url(#ring)" stroke-width="44"/>
+  <circle cx="512" cy="500" r="62" fill="url(#ring)"/>
+
+  <!-- Card footer lines -->
+  <rect x="352" y="700" width="320" height="30" rx="15" fill="#5146e5" fill-opacity="0.35"/>
+</svg>

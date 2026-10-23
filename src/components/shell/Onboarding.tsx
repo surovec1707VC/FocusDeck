@@ -6,6 +6,7 @@ import { t } from "../../i18n";
 import { api, Theme } from "../../lib/api";
 import { useModules } from "../../lib/modules-context";
 import { useSettings } from "../../lib/settings-context";
+import logo from "../../assets/logo.svg";
 
 const O = t.shell.onboarding;
 const STEPS = ["welcome", "theme", "modules", "keys", "done"] as const;
@@ -74,7 +75,7 @@ export default function Onboarding({ open, onClose }: { open: boolean; onClose: 
       {key === "welcome" && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-xl bg-accent-600 text-xl font-bold text-white">F</div>
+            <img src={logo} alt="" className="size-14 shrink-0" />
             <p className="text-zinc-600 dark:text-zinc-300">{O.welcome}</p>
           </div>
           <ul className="flex flex-col gap-2">

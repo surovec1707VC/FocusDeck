@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import { api } from "../lib/api";
 import { useShell } from "../lib/shell-context";
 import { useAsync } from "../lib/use-async";
+import logo from "../assets/logo.svg";
 
 /** Direct dependencies and their licenses (from package.json / Cargo metadata). */
 const COMPONENTS: { name: string; license: string; part: "ui" | "core" }[] = [
@@ -41,9 +42,7 @@ export default function About() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="card">
           <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-xl bg-accent-600 text-xl font-bold text-white" aria-hidden>
-              F
-            </div>
+            <img src={logo} alt="" className="size-14" />
             <div>
               <div className="text-lg font-semibold">{t.app.name}</div>
               <div className="text-zinc-500">{t.app.tagline}</div>
