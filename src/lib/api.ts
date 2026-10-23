@@ -816,6 +816,11 @@ export interface Notification {
 
 export const api = {
   appInfo: () => call<AppInfo>("app_info"),
+  sessionStatus: () => call<SessionStatus>("session_status"),
+  sessionAck: () => call<void>("session_ack"),
+  backupCreate: () => call<string | null>("backup_create"),
+  backupRestore: (confirm = false) => call<string | null>("backup_restore", { confirm }),
+  appRestart: () => call<void>("app_restart"),
   dashboardStats: () => call<DashboardStats>("dashboard_stats"),
 
   settingsGet: () => call<AppSettings>("settings_get"),
@@ -1349,4 +1354,11 @@ export interface ConnectorLog {
   action: string;
   message: string;
   created_at: string;
+}
+
+export interface SessionStatus {
+  previous_crash: boolean;
+  crash_message: string | null;
+  restored: boolean;
+  restore_pending: boolean;
 }

@@ -1,7 +1,17 @@
-import { useEffect, useState } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
-import Sidebar from "./components/Sidebar";
+import Sidebar, { useNavItems } from "./components/Sidebar";
+import CommandPalette from "./components/shell/CommandPalette";
+import CrashNotice from "./components/shell/CrashNotice";
+import ErrorBoundary from "./components/shell/ErrorBoundary";
+import Onboarding from "./components/shell/Onboarding";
+import ShortcutsHelp from "./components/shell/ShortcutsHelp";
+import { ErrorBanner } from "./components/ui";
+import { ONBOARDING_KEY, Shell, ShellContext, store } from "./lib/shell-context";
+import { t } from "./i18n";
+import Docs from "./pages/Docs";
+import DesignSystem from "./pages/DesignSystem";
 import TitleBar from "./components/TitleBar";
 import Toasts from "./components/Toasts";
 import AutomationConfirm from "./components/AutomationConfirm";
@@ -28,7 +38,39 @@ import WindowsIntegration from "./pages/WindowsIntegration";
 
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const nav = useNavItems();
   const [maximized, setMaximized] = useState(false);
+  const [overlay, setOverlay] = useState<"palette" | "shortcuts" | "onboarding" | null>(() => (store.get(ONBOARDING_KEY) ? null : "onboarding"));
+  const [shellError, setShellError] = useState<string | null>(null);
+  const shell = useMemo<Shell>(
+    () => ({ openPalette: () => setOverlay("palette"), openShortcuts: () => setOverlay("shortcuts"), openOnboarding: () => setOverlay("onboarding") }),
+    [],
+  );
+
+  // App-wide shortcuts. Typing in a field never triggers the single-key ones.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && (e.key === "k" || e.key === "K" || e.code === "KeyK")) setOverlay((o) => (o === "palette" ? null : "palette"));
+      else if (ctrl && (e.key === "," || e.code === "Comma")) navigate("/settings");
+      else if (ctrl && !e.shiftKey && !e.altKey && /^Digit[1-9]$/.test(e.code)) {
+        const item = nav[Number(e.code.slice(5)) - 1];
+        if (!item) return;
+        navigate(item.to);
+      } else if (e.key === "F1" || (!typing && e.key === "?")) setOverlay("shortcuts");
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate, nav]);
+
+  const closeOverlay = () => {
+    if (overlay === "onboarding") store.set(ONBOARDING_KEY, new Date().toISOString());
+    setOverlay(null);
+  };
 
   // The tray menu can open a page (e.g. «Настройки»).
   useEffect(() => {
@@ -40,6 +82,10 @@ export default function App() {
 
   return (
     // The window is transparent: this shell is the visible surface (rounded unless maximized).
+    <ShellContext.Provider value={shell}>
+    <a href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }} className="sr-only z-50 rounded-lg bg-accent-600 px-3 py-2 text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
+      {t.shell.skip}
+    </a>
     <div
       className={`flex h-full flex-col overflow-hidden border border-zinc-300/70 bg-zinc-100/95 dark:border-zinc-800 dark:bg-zinc-950/92 ${
         maximized ? "" : "rounded-xl"
@@ -48,8 +94,11 @@ export default function App() {
       <TitleBar onMaximizedChange={setMaximized} />
       <div className="flex min-h-0 flex-1">
         <Sidebar />
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto p-4 outline-none sm:p-6">
           <div className="mx-auto max-w-6xl">
+            <CrashNotice />
+            <ErrorBanner message={shellError} onClose={() => setShellError(null)} />
+            <ErrorBoundary resetKey={location.pathname}>
             <Routes>
               <Route path="/" element={<ModuleGate id="dashboard"><Dashboard /></ModuleGate>} />
               <Route path="/widgets" element={<ModuleGate id="widgets"><Widgets /></ModuleGate>} />
@@ -71,12 +120,20 @@ export default function App() {
               <Route path="/settings" element={<ModuleGate id="settings"><Settings /></ModuleGate>} />
               <Route path="/permissions" element={<ModuleGate id="security"><Permissions /></ModuleGate>} />
               <Route path="/about" element={<About />} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="/docs/:name" element={<Docs />} />
+              <Route path="/design" element={<DesignSystem />} />
             </Routes>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
       <Toasts />
       <AutomationConfirm />
+      <CommandPalette open={overlay === "palette"} onClose={closeOverlay} onError={setShellError} />
+      <ShortcutsHelp open={overlay === "shortcuts"} onClose={closeOverlay} />
+      <Onboarding open={overlay === "onboarding"} onClose={closeOverlay} />
     </div>
+    </ShellContext.Provider>
   );
 }

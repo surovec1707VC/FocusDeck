@@ -1,12 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { Blocks, Braces, ClipboardList, Code2, FolderTree, Monitor, Info, Plug, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
+import { Blocks, Braces, ClipboardList, Code2, FolderTree, Monitor, Info, Plug, LayoutDashboard, LayoutGrid, ListChecks, NotebookPen, Puzzle, Search, Settings, ShieldCheck, SlidersHorizontal, Timer, Workflow } from "lucide-react";
 import { t } from "../i18n";
 import { useModules } from "../lib/modules-context";
 import { DEV_MODULES } from "../lib/dev-modules";
+import { useShell } from "../lib/shell-context";
 
 /** `module`: the page is hidden from the menu while that module is off;
  *  `anyOf`: shown while at least one of these modules is on. */
-const ITEMS: { to: string; label: string; icon: typeof Info; module?: string; anyOf?: string[] }[] = [
+export const ITEMS: { to: string; label: string; icon: typeof Info; module?: string; anyOf?: string[] }[] = [
   { to: "/", label: t.nav.dashboard, icon: LayoutDashboard, module: "dashboard" },
   { to: "/widgets", label: t.nav.widgets, icon: LayoutGrid, module: "widgets" },
   { to: "/layouts", label: t.nav.layouts, icon: Blocks, module: "layouts" },
@@ -27,17 +28,35 @@ const ITEMS: { to: string; label: string; icon: typeof Info; module?: string; an
   { to: "/about", label: t.nav.about, icon: Info },
 ];
 
+/** Menu items visible with the current modules (also used by the palette and Ctrl+1…9). */
+export function useNavItems() {
+  const { isEnabled } = useModules();
+  return ITEMS.filter((item) => (!item.module || isEnabled(item.module)) && (!item.anyOf || item.anyOf.some(isEnabled)));
+}
+
 /** Icons only below `lg`, icons with labels from `lg` up. */
 export default function Sidebar() {
-  const { isEnabled } = useModules();
+  const items = useNavItems();
+  const shell = useShell();
   return (
-    <nav aria-label="Основная навигация" className="flex w-14 shrink-0 flex-col gap-1 border-r border-zinc-200/70 p-2 lg:w-52 dark:border-zinc-800/70">
-      {ITEMS.filter((item) => (!item.module || isEnabled(item.module)) && (!item.anyOf || item.anyOf.some(isEnabled))).map(({ to, label, icon: Icon }) => (
+    <nav aria-label="Основная навигация" className="flex w-14 shrink-0 flex-col gap-1 overflow-y-auto border-r border-zinc-200/70 p-2 lg:w-52 dark:border-zinc-800/70">
+      <button
+        type="button"
+        onClick={shell.openPalette}
+        title={`${t.shell.palette.title} (Ctrl+K)`}
+        aria-keyshortcuts="Control+K"
+        className="mb-1 flex items-center gap-3 rounded-lg border border-zinc-300/70 px-2.5 py-1.5 text-zinc-500 transition hover:bg-zinc-200/70 focus-visible:outline-2 focus-visible:outline-accent-500 dark:border-zinc-700/70 dark:hover:bg-zinc-800"
+      >
+        <Search className="size-4.5 shrink-0" />
+        <span className="hidden flex-1 text-left lg:inline">{t.dashboard.search}</span>
+        <kbd className="kbd hidden lg:inline-flex">Ctrl K</kbd>
+      </button>
+      {items.map(({ to, label, icon: Icon }, i) => (
         <NavLink
           key={to}
           to={to}
           end={to === "/"}
-          title={label}
+          title={i < 9 ? `${label} (Ctrl+${i + 1})` : label}
           className={({ isActive }) =>
             `flex items-center gap-3 rounded-lg px-2.5 py-2 font-medium transition ${
               isActive

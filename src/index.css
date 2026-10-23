@@ -3,8 +3,21 @@
 /* Dark mode follows the `dark` class on <html> (set from the theme setting). */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Design tokens (see docs/design-system.md).
+ * Colour: zinc = neutral surfaces and text, accent = brand/interactive,
+ * emerald = ok, amber = warning, red = danger, sky = info.
+ * Type scale: text-xs 12 (hints, badges) · text-sm 14 (body) · text-base 16
+ * (dialog titles) · text-lg 18 (card titles) · text-2xl 24 (page titles).
+ * Radius: md 6 (menu items) · lg 8 (controls) · xl 12 (cards, dialogs).
+ */
 @theme {
   --font-sans: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+  --color-accent-50: oklch(0.97 0.02 265);
+  --color-accent-100: oklch(0.93 0.04 265);
+  --color-accent-300: oklch(0.8 0.1 265);
+  --color-accent-700: oklch(0.48 0.17 265);
   --color-accent-400: oklch(0.72 0.15 265);
   --color-accent-500: oklch(0.64 0.17 265);
   --color-accent-600: oklch(0.56 0.18 265);
@@ -27,6 +40,15 @@ input,
 textarea,
 select {
   @apply select-text;
+}
+
+/* Visible focus for every keyboard-reachable element. */
+a:focus-visible,
+[role="tab"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* Thin scrollbars that match both themes. */
@@ -63,6 +85,45 @@ select {
   @apply btn text-zinc-600 hover:bg-zinc-200/70 dark:text-zinc-400 dark:hover:bg-zinc-800;
 }
 
+@utility btn-sm {
+  @apply px-2 py-1 text-xs;
+}
+
+/* Square button with only an icon: always give it aria-label and a Tooltip. */
+@utility icon-btn {
+  @apply inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition
+    hover:bg-zinc-200/70 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100
+    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500
+    disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility label {
+  @apply text-xs font-medium text-zinc-600 dark:text-zinc-400;
+}
+
+@utility kbd {
+  @apply inline-flex min-w-5 items-center justify-center rounded border border-zinc-300 bg-zinc-100 px-1 font-mono text-[11px] leading-4 text-zinc-600
+    dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300;
+}
+
+@utility data-table {
+  @apply w-full border-collapse text-left text-sm;
+  & th {
+    @apply border-b border-zinc-200 px-3 py-2 text-xs font-medium tracking-wide text-zinc-500 uppercase dark:border-zinc-800;
+  }
+  & td {
+    @apply border-b border-zinc-200/70 px-3 py-2 align-top dark:border-zinc-800/70;
+  }
+  & tbody tr:hover {
+    @apply bg-zinc-100/70 dark:bg-zinc-800/40;
+  }
+}
+
+@utility menu-item {
+  @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-zinc-200 focus-visible:bg-zinc-200
+    aria-selected:bg-accent-500/15 dark:hover:bg-zinc-800 dark:focus-visible:bg-zinc-800;
+}
+
 @utility btn-danger {
   @apply btn text-red-600 hover:bg-red-500/10 dark:text-red-400;
 }
@@ -74,4 +135,17 @@ select {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
   }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@utility animate-fade-in {
+  animation: fade-in 120ms ease-out;
+}
+
+/* Floating menus and popovers: solid surface above page content. */
+@utility popover {
+  @apply z-40 rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
 }

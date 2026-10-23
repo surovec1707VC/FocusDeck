@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
-import { Eye, Plus } from "lucide-react";
+import { Activity, Eye, LayoutGrid, Plus, Search, Zap } from "lucide-react";
 import WidgetGrid from "../components/widgets/WidgetGrid";
 import WidgetSettingsDialog from "../components/widgets/WidgetSettingsDialog";
 import { WIDGET_UI } from "../components/widgets/registry";
-import { Empty, ErrorBanner, PageHeader } from "../components/ui";
+import { Badge, EmptyState, ErrorBanner, PageHeader, Spinner, Tooltip } from "../components/ui";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { t } from "../i18n";
-import { api, errorText, EVENTS, GridItem, Layout, Widget, WidgetKind } from "../lib/api";
+import { api, errorText, EVENTS, GridItem, Layout, ModuleStatus, QuickAction, Widget, WidgetKind } from "../lib/api";
+import { useShell } from "../lib/shell-context";
+import { useGuarded } from "../lib/use-guarded";
 import { useModules } from "../lib/modules-context";
 import { useWidgetCatalog } from "../lib/widget-catalog";
 
@@ -41,6 +43,42 @@ export default function Dashboard() {
   const [removing, setRemoving] = useState<Widget | null>(null);
   const add = usePopover();
   const hiddenMenu = usePopover();
+  const quickMenu = usePopover();
+  const statusMenu = usePopover();
+  const shell = useShell();
+  const [quick, setQuick] = useState<QuickAction[] | null>(null);
+  const [health, setHealth] = useState<ModuleStatus[] | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const quickOn = isEnabled("clipboard_history");
+  const enabledModules = modules?.filter((m) => m.enabled) ?? [];
+  const attention = enabledModules.filter((m) => m.missing_permissions.length > 0 || m.pending_restart);
+
+  useEffect(() => {
+    if (quickMenu.open && quickOn) api.quickActionsList().then(setQuick).catch((e) => setError(errorText(e)));
+  }, [quickMenu.open, quickOn]);
+
+  // Health of enabled modules, checked on demand (one call per module).
+  useEffect(() => {
+    if (!statusMenu.open) return;
+    setHealth(null);
+    Promise.all(enabledModules.map((m) => api.getModuleStatus(m.id).catch(() => null))).then((r) =>
+      setHealth(r.filter((x): x is ModuleStatus => x !== null)),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusMenu.open]);
+
+  const guarded = useGuarded(setError);
+  // Commands still need their confirmation: the backend asks, the dialog answers.
+  async function runQuick(q: QuickAction) {
+    quickMenu.setOpen(false);
+    await guarded.run(
+      (confirm) => api.quickActionsRun(q.id, confirm),
+      () => {
+        setNotice(D.ran(q.name));
+        setTimeout(() => setNotice(null), 3000);
+      },
+    );
+  }
 
   const grid = settingsOf("dashboard");
   const cols = Number(grid.columns ?? 12);
@@ -123,9 +161,97 @@ export default function Dashboard() {
     <>
       <PageHeader
         title={active?.name ?? D.title}
-        subtitle={D.subtitle}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            {active && (
+              <Badge tone="accent">
+                <LayoutGrid className="mr-1 size-3" aria-hidden /> {D.activeLayout}: {active.name}
+              </Badge>
+            )}
+            {modules && (
+              <span className="relative" ref={statusMenu.ref}>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium transition hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                  onClick={() => statusMenu.setOpen(!statusMenu.open)}
+                  aria-expanded={statusMenu.open}
+                  aria-haspopup="dialog"
+                >
+                  <span className={`size-2 rounded-full ${attention.length ? "bg-amber-500" : "bg-emerald-500"}`} aria-hidden />
+                  {D.moduleStatus(enabledModules.length, modules.length)}
+                  {attention.length > 0 && <span className="text-amber-600 dark:text-amber-400">· {D.moduleIssues(attention.length)}</span>}
+                </button>
+                {statusMenu.open && (
+                  <div role="dialog" aria-label={D.modules} className="popover animate-fade-in absolute left-0 z-30 mt-1 w-80 p-2 shadow-xl">
+                    {!health && (
+                      <div className="flex items-center gap-2 p-2 text-zinc-500">
+                        <Spinner /> {D.checking}
+                      </div>
+                    )}
+                    {health && health.filter((h) => h.state !== "ok").length === 0 && <div className="p-2 text-emerald-600 dark:text-emerald-400">{D.moduleAllOk}</div>}
+                    <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
+                      {health
+                        ?.filter((h) => h.state !== "ok")
+                        .map((h) => (
+                          <li key={h.module_id}>
+                            <Link to={`/control-center?module=${h.module_id}`} className="menu-item">
+                              <span className={`size-2 shrink-0 rounded-full ${h.state === "error" ? "bg-red-500" : "bg-amber-500"}`} aria-hidden />
+                              <span className="min-w-0 flex-1">
+                                <span className="block font-medium">{modules.find((m) => m.id === h.module_id)?.name}</span>
+                                <span className="block truncate text-xs text-zinc-500">{h.message}</span>
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                    </ul>
+                    <Link to="/control-center" className="btn-ghost btn-sm mt-1 w-full">
+                      {D.openControlCenter}
+                    </Link>
+                  </div>
+                )}
+              </span>
+            )}
+          </span>
+        }
         actions={
           <>
+            <Tooltip text={`${D.search} (Ctrl+K)`} side="bottom">
+              <button className="btn-secondary" onClick={shell.openPalette} aria-label={D.search}>
+                <Search className="size-4" />
+              </button>
+            </Tooltip>
+            <div className="relative" ref={quickMenu.ref}>
+              <button className="btn-secondary" onClick={() => quickMenu.setOpen(!quickMenu.open)} aria-expanded={quickMenu.open} aria-haspopup="menu">
+                <Zap className="size-4" />
+                <span className="hidden sm:inline">{D.quickActions}</span>
+              </button>
+              {quickMenu.open && (
+                <div className="popover animate-fade-in absolute left-0 mt-1 w-72">
+                  {!quickOn && <p className="p-2 text-xs text-zinc-500">{D.quickActionsOff}</p>}
+                  {quickOn && quick === null && (
+                    <div className="p-2">
+                      <Spinner />
+                    </div>
+                  )}
+                  {quickOn && quick?.length === 0 && <p className="p-2 text-zinc-500">{D.quickActionsEmpty}</p>}
+                  {quickOn && quick && quick.length > 0 && (
+                    <ul role="menu" className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">
+                      {quick.map((q) => (
+                        <li key={q.id} role="none">
+                          <button role="menuitem" className="menu-item" onClick={() => runQuick(q)}>
+                            <Zap className="size-4 shrink-0 text-accent-500" aria-hidden />
+                            <span className="min-w-0 flex-1 truncate">{q.name}</span>
+                            {q.hotkey && <kbd className="kbd">{q.hotkey}</kbd>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <Link to={quickOn ? "/clipboard" : "/control-center?module=clipboard_history"} className="btn-ghost btn-sm mt-1 w-full">
+                    {quickOn ? D.quickActionsManage : D.openControlCenter}
+                  </Link>
+                </div>
+              )}
+            </div>
             {layouts && (
               <label className="flex items-center gap-2 text-zinc-500">
                 <span className="hidden sm:inline">{D.layout}</span>
@@ -145,7 +271,7 @@ export default function Dashboard() {
                   {D.hidden(hidden.length)}
                 </button>
                 {hiddenMenu.open && (
-                  <ul className="card absolute right-0 z-30 mt-1 flex w-60 flex-col gap-0.5 p-1 shadow-xl">
+                  <ul className="popover absolute right-0 mt-1 flex w-60 flex-col gap-0.5 p-1 shadow-xl">
                     {hidden.map((w) => (
                       <li key={w.id}>
                         <button
@@ -171,7 +297,7 @@ export default function Dashboard() {
                   {D.addWidget}
                 </button>
                 {add.open && (
-                  <ul className="card absolute right-0 z-30 mt-1 flex max-h-96 w-64 flex-col gap-0.5 overflow-y-auto p-1 shadow-xl">
+                  <ul className="popover absolute right-0 mt-1 flex max-h-96 w-64 flex-col gap-0.5 overflow-y-auto p-1 shadow-xl">
                     {addable.length === 0 && <li className="p-2 text-zinc-500">{D.nothingToAdd}</li>}
                     {addable.map((c) => {
                       const Icon = WIDGET_UI[c.kind].icon;
@@ -195,20 +321,34 @@ export default function Dashboard() {
         }
       />
       <ErrorBanner message={error} onClose={() => setError(null)} />
+      {notice && (
+        <p role="status" className="mb-3 text-xs text-emerald-600 dark:text-emerald-400">
+          {notice}
+        </p>
+      )}
 
       {!widgetsOn && (
-        <Empty>
-          {D.widgetsOff}{" "}
-          <Link to="/control-center" className="text-accent-600 hover:underline dark:text-accent-400">
-            {t.gate.open}
-          </Link>
-        </Empty>
+        <EmptyState
+          icon={LayoutGrid}
+          title={D.widgetsOff}
+          action={
+            <Link to="/control-center?module=widgets" className="btn-primary">
+              {t.gate.open}
+            </Link>
+          }
+        />
       )}
       {widgetsOn && widgets && visible.length === 0 && (
-        <Empty>
-          <p>{D.empty}</p>
-          <p className="mt-1 text-xs">{D.emptyHint}</p>
-        </Empty>
+        <EmptyState
+          icon={Activity}
+          title={D.empty}
+          hint={D.emptyHint}
+          action={
+            <button className="btn-primary" onClick={() => add.setOpen(true)}>
+              <Plus className="size-4" /> {D.addWidget}
+            </button>
+          }
+        />
       )}
       {widgetsOn && visible.length > 0 && (
         <WidgetGrid
@@ -228,6 +368,7 @@ export default function Dashboard() {
         />
       )}
 
+      {guarded.dialog}
       <WidgetSettingsDialog widget={editing} entry={editing ? entry(editing.kind) : undefined} onClose={() => setEditing(null)} onSaved={replace} />
       <ConfirmDialog
         open={removing !== null}

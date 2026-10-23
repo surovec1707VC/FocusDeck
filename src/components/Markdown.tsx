@@ -55,6 +55,43 @@ function blocks(src: string): ReactNode[] {
       );
       continue;
     }
+    // GFM table: header row, separator row, body rows.
+    if (line.trim().startsWith("|") && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1] ?? "")) {
+      const cells = (l: string) =>
+        l
+          .trim()
+          .replace(/^\|/, "")
+          .replace(/\|$/, "")
+          .split(/(?<!\\)\|/)
+          .map((c) => c.trim().replace(/\\\|/g, "|"));
+      const head = cells(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && lines[i].trim().startsWith("|")) rows.push(cells(lines[i++]));
+      out.push(
+        <div key={key} className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                {head.map((c, j) => (
+                  <th key={j}>{inline(c)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, ri) => (
+                <tr key={ri}>
+                  {r.map((c, j) => (
+                    <td key={j}>{inline(c)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
+      continue;
+    }
     const listRe = /^\s*([-*+]|\d+[.)])\s+(.*)$/;
     if (listRe.test(line)) {
       const ordered = /^\s*\d/.test(line);
@@ -94,7 +131,7 @@ function blocks(src: string): ReactNode[] {
       continue;
     }
     const para: string[] = [];
-    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|>|```|\s*([-*+]|\d+[.)])\s)/.test(lines[i])) para.push(lines[i++]);
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|>|```|\s*\||\s*([-*+]|\d+[.)])\s)/.test(lines[i])) para.push(lines[i++]);
     out.push(<p key={key}>{para.flatMap((p, j) => (j ? [<br key={`b${j}`} />, ...inline(p)] : inline(p)))}</p>);
   }
   return out;
@@ -121,8 +158,14 @@ function inline(text: string): ReactNode[] {
     else {
       const [, label, url] = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(tok)!;
       const safe = /^(https?:|mailto:)/i.test(url);
+      // A link to another doc (other.md) opens it inside the app.
+      const doc = /^([\w-]+)\.md(#.*)?$/.exec(url);
       out.push(
-        safe ? (
+        doc ? (
+          <a key={key} href={`#/docs/${doc[1]}`} className="text-accent-600 underline dark:text-accent-400">
+            {label}
+          </a>
+        ) : safe ? (
           <a
             key={key}
             href={url}
