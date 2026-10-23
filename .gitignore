@@ -25,3 +25,4 @@ dist-ssr
 
 # Release artifacts (scripts/build-portable.ps1)
 /release
+/FocusDeck
