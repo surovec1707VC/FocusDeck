@@ -25,6 +25,7 @@
 | `windows_integration/` | **Windows Integration**: окна, приложения, рабочие столы, звук (Core Audio), яркость, сеть, питание, скриншоты, буфер, уведомления, UI Automation. API — [windows-integration.md](windows-integration.md) |
 | `devtools/` | **Developer Tools**: Git, Project Launcher, Terminal Quick Launcher, API Tester, Regex Tester, JSON/YAML Tools — шесть модулей. API — [developer-tools.md](developer-tools.md) |
 | `integrations/` | **Integrations**: 13 коннекторов по манифестам (`manifests/*.json`), реестр в SQLite, секреты в Windows Credential Manager, проверки состояния без сети, Offline Mode, журнал. API — [integrations.md](integrations.md), формат — [integration.schema.json](integration.schema.json) |
+| `session.rs` | метка сеанса (`session.lock`) и сообщение паники → уведомление о сбое при следующем запуске; резервная копия базы (`VACUUM INTO`) и отложенное восстановление при следующем старте (старая база сохраняется) |
 | `safety.rs` | каталог действий, **Safe Mode**, **Action Log** и отмена действий |
 | `focus.rs` | Focus Mode (скрывает всплывающие уведомления) |
 | `hotkeys.rs` | глобальные горячие клавиши: показ/скрытие окна + хоткеи автоматизаций |
@@ -82,11 +83,13 @@
 | `lib/api.ts` | типы и обёртки всех Tauri-команд, ошибки бэкенда → `ApiError` |
 | `lib/theme.ts`, `lib/settings-context.tsx` | тёмная / светлая / системная тема и настройки приложения |
 | `components/` | `TitleBar`, `Sidebar` (на узком окне — только иконки), `Toasts`, UI-примитивы, тела виджетов |
-| `pages/` | Обзор, Виджеты, Макеты, Автоматизации, Модули, Настройки, Разрешения, О программе |
+| `pages/` | Обзор, Виджеты, Макеты, Автоматизации, Модули, Настройки, Разрешения, Интеграции, О программе, Документация (`docs/*.md` вшиты в сборку), Дизайн-система |
+| `components/shell/` | быстрый поиск (Ctrl+K), справка по сочетаниям (F1), знакомство при первом запуске, `ErrorBoundary` вокруг страниц, уведомление о прошлом сбое |
+| `components/ui.tsx`, `Modal.tsx` | компоненты дизайн-системы — см. [design-system.md](design-system.md) |
 
 Адаптивность: меню сворачивается до иконок при ширине меньше `lg`; сетки страниц перестраиваются от 1 до 4 колонок.
 
 Безопасность: CSP разрешает только локальные ресурсы и IPC. Фронтенду выданы лишь права на управление окном (перетаскивание, свернуть, развернуть, закрыть) и `opener` (показать файл в папке). Хоткеи, автозапуск и состояние окна доступны только из Rust.
 
 ## Тесты
-`cd src-tauri && cargo test --lib` — 109 тестов, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), манифесты и Offline Mode интеграций, ошибки.
+`cd src-tauri && cargo test --lib` — 110 тестов, в основном на in-memory SQLite: миграции, настройки, разрешения, модули, макеты и виджеты, автоматизации (валидация, CRUD, расписание), манифесты и Offline Mode интеграций, ошибки.
