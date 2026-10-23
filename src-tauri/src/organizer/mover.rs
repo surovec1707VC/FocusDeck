@@ -218,6 +218,7 @@ pub async fn apply(pool: &SqlitePool, desktop: &Path, items: &[PlanItem], source
             if !target.is_absolute() {
                 return Err("целевая папка должна быть полным путём".into());
             }
+            crate::fsguard::check_user_folder(&target).map_err(|e| e.to_string())?;
             std::fs::create_dir_all(&target).map_err(|e| format!("не удалось создать папку: {e}"))?;
             let name = from.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             let to = free_path(&target, &name, "");

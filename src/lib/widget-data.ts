@@ -7,6 +7,36 @@ import { api, errorText, EVENTS, Widget, WidgetData } from "./api";
  * and keeps showing it when a refresh fails (offline, module turned off).
  */
 const cache = new Map<string, WidgetData>();
+/** Bounded cache: oldest entries go first (removed widgets, old calendar months). */
+const CACHE_LIMIT = 200;
+function remember(key: string, d: WidgetData) {
+  cache.delete(key);
+  cache.set(key, d);
+  if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value!);
+}
+
+/** Event-driven refreshes are coalesced: at most one per widget every THROTTLE_MS. */
+export const THROTTLE_MS = 1000;
+/** Floor for periodic refresh, whatever a widget asks for. */
+export const MIN_REFRESH_SECS = 2;
+
+/** Leading + trailing throttle: the first call runs at once, a burst ends with one more call. */
+export function throttle(fn: () => void, ms: number) {
+  let last = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const run = () => {
+    last = Date.now();
+    timer = null;
+    fn();
+  };
+  const call = () => {
+    const wait = last + ms - Date.now();
+    if (wait <= 0 && !timer) run();
+    else if (!timer) timer = setTimeout(run, Math.max(wait, 0));
+  };
+  call.cancel = () => timer && clearTimeout(timer);
+  return call;
+}
 
 interface Options {
   /** Kind-specific request parameters (calendar: `{ month }`). */
@@ -35,7 +65,7 @@ export function useWidgetData<T = any>(widget: Widget, { params, events = [] }: 
 
   const accept = useCallback(
     (d: WidgetData<T>) => {
-      cache.set(key, d);
+      remember(key, d);
       setState(d);
       setError(null);
     },
@@ -80,7 +110,7 @@ export function useWidgetData<T = any>(widget: Widget, { params, events = [] }: 
   }, [reload, configJson]);
 
   // Periodic refresh, paused while the window is hidden (tray).
-  const refreshSecs = state?.refresh_secs ?? 0;
+  const refreshSecs = state?.refresh_secs ? Math.max(state.refresh_secs, MIN_REFRESH_SECS) : 0;
   useEffect(() => {
     if (!refreshSecs) return;
     const timer = setInterval(() => {
@@ -97,8 +127,11 @@ export function useWidgetData<T = any>(widget: Widget, { params, events = [] }: 
   // Module settings and other sources of change.
   const eventsKey = [EVENTS.modulesChanged, ...events].join("|");
   useEffect(() => {
-    const unlisteners = eventsKey.split("|").map((name) => listen(name, () => reload()));
+    // Bursts (clipboard changes, several modules toggled) cause one refresh, not dozens.
+    const throttled = throttle(() => document.visibilityState === "visible" && reload(), THROTTLE_MS);
+    const unlisteners = eventsKey.split("|").map((name) => listen(name, throttled));
     return () => {
+      throttled.cancel();
       unlisteners.forEach((u) => u.then((f) => f()));
     };
   }, [eventsKey, reload]);
@@ -111,7 +144,8 @@ export function useTicker(ms: number, active = true) {
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => setTick((n) => n + 1), ms);
+    // Hidden window (tray): no re-renders at all.
+    const id = setInterval(() => document.visibilityState === "visible" && setTick((n) => n + 1), ms);
     return () => clearInterval(id);
   }, [ms, active]);
 }

@@ -360,7 +360,7 @@ pub async fn git_diff(app: AppHandle, repo: String, path: Option<String>, staged
 }
 
 fn new_file_diff(repo: &Path, rel: &str) -> AppResult<String> {
-    let full = repo.join(rel);
+    let full = crate::fsguard::inside(repo, rel)?;
     let bytes = std::fs::read(&full).map_err(|e| AppError::NotFound(format!("{rel}: {e}")))?;
     let mut out = format!("diff --git a/{rel} b/{rel}\nnew file\n--- /dev/null\n+++ b/{rel}\n");
     if bytes.contains(&0) {

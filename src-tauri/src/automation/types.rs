@@ -326,7 +326,8 @@ fn check_days(days: &[u8]) -> AppResult<()> {
 
 fn check_process(p: &str) -> AppResult<()> {
     len_between(p, 1, 100, "имя процесса")?;
-    if p.contains(['\\', '/', '"', '*', '?']) {
+    // Letters, digits and a few safe characters only: names reach taskkill and process lists.
+    if !p.chars().all(|c| c.is_alphanumeric() || " ._-+()".contains(c)) {
         return Err(AppError::Invalid("имя процесса без пути, например obs64.exe".into()));
     }
     Ok(())

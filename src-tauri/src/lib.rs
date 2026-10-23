@@ -9,6 +9,7 @@ mod db;
 mod devtools;
 mod error;
 mod focus;
+mod fsguard;
 mod hotkeys;
 mod info;
 mod integrations;
@@ -21,6 +22,7 @@ mod plugins;
 mod productivity;
 mod safety;
 mod session;
+mod transfer;
 mod settings;
 mod state;
 mod tray;
@@ -98,6 +100,12 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
 /// Optional WAL checkpoint on exit (Database module setting).
 fn on_exit(app: &AppHandle) {
     let state = app.state::<AppState>();
+    // Background tasks first, so nothing writes to the database while it closes.
+    let tasks: Vec<_> = state.background.lock().unwrap().drain().collect();
+    for (module, handle) in tasks {
+        handle.abort();
+        tracing::info!(module = %module, "background task stopped (exit)");
+    }
     if state.module_enabled(DATABASE) {
         tauri::async_runtime::block_on(async {
             let checkpoint = registry::settings(&state.db, DATABASE)
@@ -120,6 +128,8 @@ fn on_exit(app: &AppHandle) {
     if let Ok(dir) = app.path().app_data_dir() {
         session::finish(&dir);
     }
+    // Waits (bounded) for open queries, then closes every connection.
+    let _ = tauri::async_runtime::block_on(tokio::time::timeout(std::time::Duration::from_secs(3), state.db.close()));
     tracing::info!("FocusDeck exiting");
 }
 
@@ -144,6 +154,8 @@ pub fn run() {
             session::backup_create,
             session::backup_restore,
             session::app_restart,
+            transfer::data_export,
+            transfer::data_import,
             info::dashboard_stats,
             settings::settings_get,
             settings::settings_update,

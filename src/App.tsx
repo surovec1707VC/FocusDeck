@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import Sidebar, { useNavItems } from "./components/Sidebar";
@@ -7,34 +7,34 @@ import CrashNotice from "./components/shell/CrashNotice";
 import ErrorBoundary from "./components/shell/ErrorBoundary";
 import Onboarding from "./components/shell/Onboarding";
 import ShortcutsHelp from "./components/shell/ShortcutsHelp";
-import { ErrorBanner } from "./components/ui";
+import { ErrorBanner, Spinner } from "./components/ui";
 import { ONBOARDING_KEY, Shell, ShellContext, store } from "./lib/shell-context";
 import { t } from "./i18n";
-import Docs from "./pages/Docs";
-import DesignSystem from "./pages/DesignSystem";
+const Docs = lazy(() => import("./pages/Docs"));
+const DesignSystem = lazy(() => import("./pages/DesignSystem"));
 import TitleBar from "./components/TitleBar";
 import Toasts from "./components/Toasts";
 import AutomationConfirm from "./components/AutomationConfirm";
 import { EVENTS } from "./lib/api";
-import About from "./pages/About";
-import Automations from "./pages/Automations";
-import ClipboardHub from "./pages/ClipboardHub";
+const About = lazy(() => import("./pages/About"));
+const Automations = lazy(() => import("./pages/Automations"));
+const ClipboardHub = lazy(() => import("./pages/ClipboardHub"));
 import ControlCenter from "./pages/ControlCenter";
 import ModuleGate from "./components/ModuleGate";
 import Dashboard from "./pages/Dashboard";
-import DevTools from "./pages/DevTools";
-import Integrations from "./pages/Integrations";
-import Layouts from "./pages/Layouts";
-import Modules from "./pages/Modules";
-import Notes from "./pages/Notes";
-import Organizer from "./pages/Organizer";
-import Snippets from "./pages/Snippets";
-import Tasks from "./pages/Tasks";
-import Timers from "./pages/Timers";
-import Permissions from "./pages/Permissions";
-import Settings from "./pages/Settings";
-import Widgets from "./pages/Widgets";
-import WindowsIntegration from "./pages/WindowsIntegration";
+const DevTools = lazy(() => import("./pages/DevTools"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const Layouts = lazy(() => import("./pages/Layouts"));
+const Modules = lazy(() => import("./pages/Modules"));
+const Notes = lazy(() => import("./pages/Notes"));
+const Organizer = lazy(() => import("./pages/Organizer"));
+const Snippets = lazy(() => import("./pages/Snippets"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const Timers = lazy(() => import("./pages/Timers"));
+const Permissions = lazy(() => import("./pages/Permissions"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Widgets = lazy(() => import("./pages/Widgets"));
+const WindowsIntegration = lazy(() => import("./pages/WindowsIntegration"));
 
 export default function App() {
   const navigate = useNavigate();
@@ -99,6 +99,7 @@ export default function App() {
             <CrashNotice />
             <ErrorBanner message={shellError} onClose={() => setShellError(null)} />
             <ErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<PageLoading />}>
             <Routes>
               <Route path="/" element={<ModuleGate id="dashboard"><Dashboard /></ModuleGate>} />
               <Route path="/widgets" element={<ModuleGate id="widgets"><Widgets /></ModuleGate>} />
@@ -124,6 +125,7 @@ export default function App() {
               <Route path="/docs/:name" element={<Docs />} />
               <Route path="/design" element={<DesignSystem />} />
             </Routes>
+            </Suspense>
             </ErrorBoundary>
           </div>
         </main>
@@ -135,5 +137,13 @@ export default function App() {
       <Onboarding open={overlay === "onboarding"} onClose={closeOverlay} />
     </div>
     </ShellContext.Provider>
+  );
+}
+
+function PageLoading() {
+  return (
+    <div className="flex justify-center py-16">
+      <Spinner />
+    </div>
   );
 }

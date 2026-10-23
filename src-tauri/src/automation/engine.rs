@@ -198,11 +198,12 @@ async fn execute(app: &AppHandle, a: &Automation, action: &Action) -> AppResult<
         }
         Action::CloseApp { process, force } => {
             let name = normalize_process(process);
-            let mut cmd = format!("taskkill /IM \"{name}\"");
+            // taskkill with an argument list: no shell, so the name can't inject commands.
+            let mut args = vec!["/IM".to_string(), name.clone()];
             if *force {
-                cmd += " /F";
+                args.push("/F".into());
             }
-            let out = crate::clipboard_hub::actions::run_command(&cmd, Duration::from_secs(20)).await?;
+            let out = crate::devtools::run_program(std::path::Path::new("taskkill"), &args, None, &[], Duration::from_secs(20)).await?;
             match out.code {
                 Some(0) => format!("закрыто: {name}"),
                 Some(128) => format!("{name} не запущен"),
@@ -307,6 +308,7 @@ async fn execute(app: &AppHandle, a: &Automation, action: &Action) -> AppResult<
         }
         Action::DeleteFiles { folder, pattern, older_than_days } => {
             let dir = existing(folder)?;
+            crate::fsguard::check_user_folder(std::path::Path::new(&dir))?;
             let (pattern, days) = (pattern.clone(), *older_than_days);
             let n = tauri::async_runtime::spawn_blocking(move || -> Result<usize, String> {
                 let files = system::matching_files(std::path::Path::new(&dir), &pattern, days).map_err(|e| e.to_string())?;
