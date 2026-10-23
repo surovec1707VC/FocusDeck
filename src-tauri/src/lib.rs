@@ -20,6 +20,7 @@ mod permissions;
 mod plugins;
 mod productivity;
 mod safety;
+mod session;
 mod settings;
 mod state;
 mod tray;
@@ -37,6 +38,9 @@ use state::AppState;
 
 fn setup(app: &mut App) -> anyhow::Result<()> {
     let handle = app.handle().clone();
+
+    // Crash marker and a staged restore come before the database opens.
+    session::start(&app.path().app_data_dir()?)?;
 
     // Database first: the logging module's settings decide how logs are written.
     let pool = tauri::async_runtime::block_on(async {
@@ -113,6 +117,9 @@ fn on_exit(app: &AppHandle) {
             tracing::warn!("clipboard history cleanup: {e}");
         }
     }
+    if let Ok(dir) = app.path().app_data_dir() {
+        session::finish(&dir);
+    }
     tracing::info!("FocusDeck exiting");
 }
 
@@ -132,6 +139,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             info::app_info,
+            session::session_status,
+            session::session_ack,
+            session::backup_create,
+            session::backup_restore,
+            session::app_restart,
             info::dashboard_stats,
             settings::settings_get,
             settings::settings_update,
