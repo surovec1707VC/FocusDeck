@@ -34,6 +34,7 @@ const Timers = lazy(() => import("./pages/Timers"));
 const Permissions = lazy(() => import("./pages/Permissions"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Widgets = lazy(() => import("./pages/Widgets"));
+const Updates = lazy(() => import("./pages/Updates"));
 const WindowsIntegration = lazy(() => import("./pages/WindowsIntegration"));
 
 export default function App() {
@@ -121,6 +122,7 @@ export default function App() {
               <Route path="/settings" element={<ModuleGate id="settings"><Settings /></ModuleGate>} />
               <Route path="/permissions" element={<ModuleGate id="security"><Permissions /></ModuleGate>} />
               <Route path="/about" element={<About />} />
+              <Route path="/updates" element={<ModuleGate id="updates"><Updates /></ModuleGate>} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/docs/:name" element={<Docs />} />
               <Route path="/design" element={<DesignSystem />} />

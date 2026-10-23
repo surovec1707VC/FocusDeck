@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { DatabaseBackup, EyeOff, HardDriveDownload, Keyboard, Lock, RotateCcw, ShieldCheck } from "lucide-react";
 import HotkeyInput from "../components/HotkeyInput";
 import { ErrorBanner, Field, Kbd, PageHeader, Row, Toggle } from "../components/ui";
-import { api } from "../lib/api";
+import { api, DataSection } from "../lib/api";
 import { useShell } from "../lib/shell-context";
 import { useGuarded } from "../lib/use-guarded";
 import { t } from "../i18n";
@@ -22,6 +22,30 @@ export default function Settings() {
   const shell = useShell();
   const guarded = useGuarded(setError);
   const [backupNote, setBackupNote] = useState<string | null>(null);
+  const [sections, setSections] = useState<DataSection[]>(["layouts", "notes", "tasks", "calendar", "snippets", "automations"]);
+  const [withConfig, setWithConfig] = useState(true);
+
+  async function exportData() {
+    try {
+      const path = await api.dataExport(sections, withConfig);
+      if (path) setBackupNote(S.exportSaved(path));
+      setError(null);
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function importData() {
+    await guarded.run(
+      (confirm) => api.dataImport(confirm),
+      (r) => {
+        if (!r) return;
+        const n = Object.values(r.imported).reduce((a, b) => a + b, 0);
+        const skipped = Object.values(r.skipped).reduce((a, b) => a + b, 0);
+        setBackupNote(S.importDone(n, skipped, r.config_applied) + (r.warnings.length ? ` ${r.warnings.join("; ")}` : ""));
+      },
+    );
+  }
 
   async function backup() {
     try {
@@ -168,6 +192,37 @@ export default function Settings() {
               <RotateCcw className="size-4" /> {S.backupRestore}
             </button>
           </div>
+          <fieldset className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <legend className="label px-1">{S.exportTitle}</legend>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <label className="flex items-center gap-1.5">
+                <input type="checkbox" className="accent-accent-600" checked={withConfig} onChange={(e) => setWithConfig(e.target.checked)} />
+                {S.sections.config}
+              </label>
+              {(Object.keys(S.sections) as (DataSection | "config")[])
+                .filter((k): k is DataSection => k !== "config")
+                .map((k) => (
+                  <label key={k} className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      className="accent-accent-600"
+                      checked={sections.includes(k)}
+                      onChange={(e) => setSections(e.target.checked ? [...sections, k] : sections.filter((x) => x !== k))}
+                    />
+                    {S.sections[k]}
+                  </label>
+                ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-secondary" disabled={!withConfig && sections.length === 0} onClick={exportData}>
+                {S.exportData}
+              </button>
+              <button type="button" className="btn-secondary" onClick={importData}>
+                {S.importData}
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500">{S.exportHint}</p>
+          </fieldset>
           {backupNote && (
             <p role="status" className="text-xs break-all text-emerald-600 select-text dark:text-emerald-400">
               {backupNote}

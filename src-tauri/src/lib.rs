@@ -16,6 +16,7 @@ mod integrations;
 mod logging;
 mod modules;
 mod notifications;
+mod paths;
 mod organizer;
 mod permissions;
 mod plugins;
@@ -23,6 +24,9 @@ mod productivity;
 mod safety;
 mod session;
 mod transfer;
+mod updates;
+#[cfg(test)]
+mod ipc_tests;
 mod settings;
 mod state;
 mod tray;
@@ -42,11 +46,11 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
     let handle = app.handle().clone();
 
     // Crash marker and a staged restore come before the database opens.
-    session::start(&app.path().app_data_dir()?)?;
+    session::start(&paths::data_dir(app.handle())?)?;
 
     // Database first: the logging module's settings decide how logs are written.
     let pool = tauri::async_runtime::block_on(async {
-        let pool = db::connect(&app.path().app_data_dir()?).await?;
+        let pool = db::connect(&paths::data_dir(app.handle())?).await?;
         permissions::seed(&pool).await?;
         registry::seed(&pool).await?;
         workspace::seed(&pool).await?;
@@ -63,7 +67,7 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
         let to_file = registry::is_enabled(&pool, LOGGING).await.unwrap_or(true);
         (level, to_file)
     });
-    app.manage(logging::init(&app.path().app_log_dir()?, &log_level, log_to_file)?);
+    app.manage(logging::init(&paths::log_dir(app.handle())?, &log_level, log_to_file)?);
     tracing::info!(version = %app.package_info().version, "FocusDeck starting");
 
     let settings = tauri::async_runtime::block_on(settings::load(&pool))?;
@@ -83,6 +87,7 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
         tracing::warn!("{e}");
     }
     background::reconcile_all(&handle);
+    tauri::async_runtime::spawn(updates::startup_check(handle.clone()));
     if automations_on {
         let h = handle.clone();
         tauri::async_runtime::spawn(async move { automation::engine::run_startup_automations(&h).await });
@@ -125,7 +130,7 @@ fn on_exit(app: &AppHandle) {
             tracing::warn!("clipboard history cleanup: {e}");
         }
     }
-    if let Ok(dir) = app.path().app_data_dir() {
+    if let Ok(dir) = paths::data_dir(app) {
         session::finish(&dir);
     }
     // Waits (bounded) for open queries, then closes every connection.
@@ -135,6 +140,7 @@ fn on_exit(app: &AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    paths::prepare_webview();
     plugins::register(tauri::Builder::default())
         .setup(|app| setup(app).map_err(|e| e.into()))
         .on_window_event(|window, event| {
@@ -156,6 +162,10 @@ pub fn run() {
             session::app_restart,
             transfer::data_export,
             transfer::data_import,
+            updates::updates_status,
+            updates::updates_check,
+            updates::updates_install,
+            updates::updates_rollback,
             info::dashboard_stats,
             settings::settings_get,
             settings::settings_update,

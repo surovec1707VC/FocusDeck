@@ -113,7 +113,7 @@ pub async fn check_backup(path: &Path) -> AppResult<()> {
 }
 
 fn data_dir(app: &AppHandle) -> AppResult<PathBuf> {
-    Ok(app.path().app_data_dir().map_err(anyhow::Error::from)?)
+    Ok(crate::paths::data_dir(app)?)
 }
 
 #[tauri::command]
@@ -163,11 +163,17 @@ pub async fn backup_restore(app: AppHandle, confirm: bool) -> AppResult<Option<S
     .map_err(anyhow::Error::from)?;
     let Some(picked) = picked else { return Ok(None) };
     let path = picked.into_path().map_err(anyhow::Error::from)?;
-    check_backup(&path).await?;
-    std::fs::copy(&path, data_dir(&app)?.join(RESTORE)).map_err(anyhow::Error::from)?;
+    stage_restore(&app, &path).await?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Checks a backup and stages it to replace the database at the next start.
+pub async fn stage_restore(app: &AppHandle, path: &Path) -> AppResult<()> {
+    check_backup(path).await?;
+    std::fs::copy(path, data_dir(app)?.join(RESTORE)).map_err(anyhow::Error::from)?;
     status().lock().unwrap().restore_pending = true;
     tracing::info!("restore staged from {}", path.display());
-    Ok(Some(path.display().to_string()))
+    Ok(())
 }
 
 /// Restarts FocusDeck (used to apply a staged restore).

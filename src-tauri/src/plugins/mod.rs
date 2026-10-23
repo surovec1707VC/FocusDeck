@@ -30,4 +30,6 @@ pub fn register(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(tauri_plugin_opener::init())
         // File dialogs for configuration export/import.
         .plugin(tauri_plugin_dialog::init())
+        // Configured in code (updates.rs): no endpoint or key in tauri.conf.json.
+        .plugin(tauri_plugin_updater::Builder::new().build())
 }

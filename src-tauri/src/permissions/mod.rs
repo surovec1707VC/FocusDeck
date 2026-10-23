@@ -29,6 +29,7 @@ pub const PERM_SYSTEM_SETTINGS: &str = "system.settings";
 pub const PERM_UI_AUTOMATION: &str = "ui.automation";
 pub const PERM_GIT: &str = "dev.git";
 pub const PERM_NETWORK_API: &str = "network.api_tester";
+pub const PERM_NETWORK_UPDATES: &str = "network.updates";
 
 struct Definition {
     id: &'static str,
@@ -165,6 +166,12 @@ const DEFINITIONS: &[Definition] = &[
         description: "Отправлять HTTP-запросы, которые вы сами составили в API Tester, на указанные вами адреса.",
         granted_by_default: false,
     },
+    Definition {
+        id: PERM_NETWORK_UPDATES,
+        name: "Сеть: проверка обновлений",
+        description: "Запрашивать у сервера релизов сведения о новой версии и скачивать подписанное обновление (установка — только с вашего подтверждения).",
+        granted_by_default: false,
+    },
 ];
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
@@ -292,7 +299,7 @@ pub fn category(id: &str) -> &'static str {
         PERM_MOUSE => "mouse",
         PERM_SCREEN => "screen",
         PERM_LAUNCH_APPS | PERM_RUN_COMMANDS | PERM_CLOSE_APPS | PERM_AUTOSTART | PERM_GIT => "processes",
-        PERM_NETWORK_WEATHER | PERM_NETWORK_API => "network",
+        PERM_NETWORK_WEATHER | PERM_NETWORK_API | PERM_NETWORK_UPDATES => "network",
         PERM_NOTIFICATIONS => "notifications",
         _ => "system",
     }

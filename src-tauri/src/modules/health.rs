@@ -111,7 +111,7 @@ pub async fn check(app: &AppHandle, id: &str) -> AppResult<(HealthState, String)
             }
         }
         LOGGING => {
-            let dir = app.path().app_log_dir().map_err(anyhow::Error::from)?;
+            let dir = crate::paths::log_dir(app)?;
             if dir.is_dir() {
                 ok(format!("журнал: {}", dir.display()))
             } else {

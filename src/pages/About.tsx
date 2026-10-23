@@ -54,6 +54,8 @@ export default function About() {
             <dd className="select-text">{info?.version}</dd>
             <dt className="text-zinc-500">{A.tauri}</dt>
             <dd className="select-text">{info?.tauri_version}</dd>
+            <dt className="text-zinc-500">{A.mode}</dt>
+            <dd>{info ? (info.portable ? A.portable : A.installed) : ""}</dd>
             <dt className="text-zinc-500">{A.license}</dt>
             <dd>{A.licenseText}</dd>
           </dl>

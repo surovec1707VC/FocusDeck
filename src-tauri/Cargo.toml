@@ -70,4 +70,8 @@ windows-sys = { version = "0.61", features = [
 tauri-plugin-autostart = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
+
+[dev-dependencies]
+tauri = { version = "2", features = ["test"] }

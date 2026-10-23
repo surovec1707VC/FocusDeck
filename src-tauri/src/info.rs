@@ -14,6 +14,8 @@ pub struct AppInfo {
     pub data_dir: String,
     pub log_dir: String,
     pub db_file: String,
+    /// Data next to the exe (`portable` marker).
+    pub portable: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -34,8 +36,8 @@ pub struct DashboardStats {
 
 #[tauri::command]
 pub fn app_info(app: AppHandle) -> AppResult<AppInfo> {
-    let data_dir = app.path().app_data_dir().map_err(anyhow::Error::from)?;
-    let log_dir = app.path().app_log_dir().map_err(anyhow::Error::from)?;
+    let data_dir = crate::paths::data_dir(&app)?;
+    let log_dir = crate::paths::log_dir(&app)?;
     Ok(AppInfo {
         name: app.package_info().name.clone(),
         version: app.package_info().version.to_string(),
@@ -43,6 +45,7 @@ pub fn app_info(app: AppHandle) -> AppResult<AppInfo> {
         db_file: data_dir.join(crate::db::DB_FILE).display().to_string(),
         data_dir: data_dir.display().to_string(),
         log_dir: log_dir.display().to_string(),
+        portable: crate::paths::is_portable(),
     })
 }
 

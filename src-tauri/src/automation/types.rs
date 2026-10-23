@@ -512,6 +512,19 @@ mod tests {
         assert!(serde_json::from_value::<Action>(json!({ "type": "format_disk" })).is_err());
     }
 
+    /// Security: names that could break out of a command line are refused at save time.
+    #[test]
+    fn process_names_cannot_inject() {
+        let close = |p: &str| input(Trigger::AppStart, vec![Action::CloseApp { process: p.into(), force: false }]).validate();
+        assert!(close("obs64.exe").is_ok());
+        assert!(close("Code - Insiders.exe").is_ok());
+        for bad in ["x.exe & calc", "a|b", "a\"b", "%COMSPEC%", "a>b", "a^b", "..\\x.exe", "x;y", "a`b", "$(x)"] {
+            assert!(close(bad).is_err(), "{bad} must be rejected");
+        }
+        let started = input(Trigger::ProcessStarted { process: "a&b".into() }, log()).validate();
+        assert!(started.is_err());
+    }
+
     #[test]
     fn validation() {
         assert!(input(Trigger::AppStart, log()).validate().is_ok());

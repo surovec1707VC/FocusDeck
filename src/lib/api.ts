@@ -47,6 +47,7 @@ export interface AppInfo {
   data_dir: string;
   log_dir: string;
   db_file: string;
+  portable: boolean;
 }
 
 export interface DashboardStats {
@@ -821,6 +822,12 @@ export const api = {
   backupCreate: () => call<string | null>("backup_create"),
   backupRestore: (confirm = false) => call<string | null>("backup_restore", { confirm }),
   appRestart: () => call<void>("app_restart"),
+  dataExport: (sections: DataSection[], includeConfig: boolean) => call<string | null>("data_export", { sections, includeConfig }),
+  dataImport: (confirm = false) => call<DataImportSummary | null>("data_import", { confirm }),
+  updatesStatus: () => call<UpdateInfo>("updates_status"),
+  updatesCheck: () => call<UpdateInfo>("updates_check"),
+  updatesInstall: (confirm = false) => call<void>("updates_install", { confirm }),
+  updatesRollback: (confirm = false) => call<UpdatePrevious>("updates_rollback", { confirm }),
   dashboardStats: () => call<DashboardStats>("dashboard_stats"),
 
   settingsGet: () => call<AppSettings>("settings_get"),
@@ -1361,4 +1368,27 @@ export interface SessionStatus {
   crash_message: string | null;
   restored: boolean;
   restore_pending: boolean;
+}
+
+export type DataSection = "layouts" | "notes" | "tasks" | "calendar" | "snippets" | "automations";
+
+export interface DataImportSummary {
+  imported: Record<string, number>;
+  skipped: Record<string, number>;
+  config_applied: boolean;
+  warnings: string[];
+}
+
+export interface UpdatePrevious {
+  version: string;
+  backup: string;
+  updated_at: string;
+}
+
+export interface UpdateInfo {
+  current: string;
+  configured: boolean;
+  available: { version: string; date: string | null; notes: string | null } | null;
+  previous: UpdatePrevious | null;
+  releases_url: string | null;
 }

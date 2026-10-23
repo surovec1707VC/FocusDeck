@@ -6,7 +6,7 @@ use super::types::{Category, ModuleDef};
 use crate::permissions::{
     PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_LAUNCH_APPS,
     PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS, PERM_PASTE, PERM_WINDOWS, PERM_MOVE_FILES,
-    PERM_NETWORK_API, PERM_RUN_COMMANDS,
+    PERM_NETWORK_API, PERM_NETWORK_UPDATES, PERM_RUN_COMMANDS,
 };
 
 // Critical modules (confirmation required to turn off).
@@ -35,6 +35,7 @@ pub const TRAY: &str = "tray";
 pub const AUTOSTART: &str = "autostart";
 pub const NOTIFICATIONS: &str = "notifications";
 pub const INTEGRATIONS: &str = "integrations";
+pub const UPDATES: &str = "updates";
 
 // Developer Tools: one module per tool.
 pub const DEV_GIT: &str = "dev_git";
@@ -483,6 +484,24 @@ pub const BUILTIN: &[ModuleDef] = &[
         settings_schema: || json!({ "type": "object", "properties": {
             "offline_mode": { "type": "boolean", "title": "Offline Mode: приостановить облачные интеграции", "default": true },
             "log_limit": { "type": "integer", "title": "Записей журнала на интеграцию", "default": 500, "minimum": 50, "maximum": 10000 }
+        }}),
+    },
+    ModuleDef {
+        id: UPDATES,
+        name: "Обновления",
+        description: "Проверка новой версии, список изменений, установка и откат.",
+        details: "Обращается к серверу релизов только при выданном разрешении «Сеть: проверка обновлений». \
+                  Пакет обновления проверяется по цифровой подписи. Перед установкой база данных копируется — \
+                  это точка отката. Автоматическая проверка при запуске включается в настройках модуля; \
+                  установка всегда требует подтверждения. Если отключить, проверки не выполняются.",
+        category: Category::PrivacySecurity,
+        version: "1.0.0",
+        enabled_by_default: false,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_NETWORK_UPDATES],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "auto_check": { "type": "boolean", "title": "Проверять при запуске", "default": false }
         }}),
     },
     // --- Developer Tools ---

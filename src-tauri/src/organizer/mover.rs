@@ -405,6 +405,39 @@ mod tests {
         assert_eq!(patterns(" *.lnk, desktop.ini ;; "), ["*.lnk", "desktop.ini"]);
     }
 
+    /// Security: a tampered plan can't move files into system folders or take files from elsewhere.
+    #[tokio::test]
+    async fn apply_refuses_protected_targets_and_foreign_files() {
+        let s = sandbox("guard");
+        let desktop = s.0.join("Desktop");
+        let file = desktop.join("a.txt");
+        std::fs::write(&file, "x").unwrap();
+        let outside = s.0.join("outside.txt");
+        std::fs::write(&outside, "x").unwrap();
+        let win = std::env::var("WINDIR").unwrap_or_else(|_| "C:\\Windows".into());
+        let item = |path: &Path, target: String| PlanItem {
+            path: path.display().to_string(),
+            name: "a.txt".into(),
+            size: 1,
+            modified: String::new(),
+            category: String::new(),
+            rule_id: "r".into(),
+            rule_name: "r".into(),
+            target_dir: target,
+        };
+        let pool = crate::db::test_pool().await;
+        let items = [
+            item(&file, format!("{win}\\FocusDeckTest")),
+            item(&file, "C:\\".into()),
+            item(&file, "relative\\dir".into()),
+            item(&outside, s.0.join("ok").display().to_string()),
+        ];
+        let r = apply(&pool, &desktop, &items, "test").await.unwrap();
+        assert_eq!((r.moved, r.failed), (0, 4));
+        assert!(file.exists() && outside.exists());
+        assert!(!Path::new(&format!("{win}\\FocusDeckTest")).exists());
+    }
+
     #[tokio::test]
     async fn plan_apply_and_undo() {
         let s = sandbox("flow");
