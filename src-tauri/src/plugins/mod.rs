@@ -16,6 +16,8 @@ pub fn register(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(RESTORED_STATE)
+                // Desktop widget windows keep their geometry in the database.
+                .with_filter(|label| !crate::widgets::desktop::is_desktop_label(label))
                 .build(),
         )
         .plugin(

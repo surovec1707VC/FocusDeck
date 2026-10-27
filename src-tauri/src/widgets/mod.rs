@@ -5,6 +5,7 @@
 pub mod catalog;
 pub mod clipboard;
 pub mod data;
+pub mod desktop;
 pub mod grid;
 pub mod system;
 pub mod weather;
@@ -39,6 +40,7 @@ struct WidgetRow {
     pinned: bool,
     collapsed: bool,
     hidden: bool,
+    desktop: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -60,6 +62,8 @@ pub struct Widget {
     pub collapsed: bool,
     /// Not shown on the dashboard; can be shown again from the hidden list.
     pub hidden: bool,
+    /// Detached into its own window on the Windows desktop (see `desktop`).
+    pub desktop: bool,
 }
 
 impl Widget {
@@ -85,6 +89,7 @@ impl TryFrom<WidgetRow> for Widget {
             pinned: r.pinned,
             collapsed: r.collapsed,
             hidden: r.hidden,
+            desktop: r.desktop,
         })
     }
 }
@@ -92,7 +97,8 @@ impl TryFrom<WidgetRow> for Widget {
 macro_rules! select_widgets {
     ($tail:literal) => {
         concat!(
-            "SELECT id, layout_id, kind, title, position, config_json, x, y, w, h, pinned, collapsed, hidden FROM widgets ",
+            "SELECT id, layout_id, kind, title, position, config_json, x, y, w, h, pinned, collapsed, hidden,
+                EXISTS(SELECT 1 FROM desktop_widgets d WHERE d.widget_id = widgets.id) AS desktop FROM widgets ",
             $tail
         )
     };
@@ -555,8 +561,10 @@ pub async fn widgets_save_grid(state: State<'_, AppState>, layout_id: String, it
 }
 
 #[tauri::command]
-pub async fn widgets_remove(state: State<'_, AppState>, id: String) -> AppResult<()> {
-    remove(&state.db, &id).await
+pub async fn widgets_remove(app: AppHandle, state: State<'_, AppState>, id: String) -> AppResult<()> {
+    remove(&state.db, &id).await?;
+    desktop::close(&app, &id);
+    Ok(())
 }
 
 /// Data of one widget. `params` are kind-specific (calendar: `{ month: "YYYY-MM" }`);

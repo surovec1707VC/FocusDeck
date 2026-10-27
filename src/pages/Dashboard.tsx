@@ -102,11 +102,11 @@ export default function Dashboard() {
     load();
   }, [load, modulesKey]);
 
-  // Layout switched by a global hotkey.
+  // Layout switched by a global hotkey; a widget detached or returned from the desktop.
   useEffect(() => {
-    const unlisten = listen(EVENTS.layoutChanged, () => load());
+    const unlisteners = [EVENTS.layoutChanged, EVENTS.desktopWidgetsChanged].map((e) => listen(e, () => load()));
     return () => {
-      unlisten.then((f) => f());
+      unlisteners.forEach((u) => u.then((f) => f()));
     };
   }, [load]);
 
@@ -152,8 +152,10 @@ export default function Dashboard() {
 
   const entry = (kind: WidgetKind) => catalog?.find((c) => c.kind === kind);
   const minSize = (w: Widget) => entry(w.kind)?.min_size ?? { w: 2, h: 2 };
-  const visible = widgets?.filter((w) => !w.hidden) ?? [];
-  const hidden = widgets?.filter((w) => w.hidden) ?? [];
+  const visible = widgets?.filter((w) => !w.hidden && !w.desktop) ?? [];
+  // Desktop widgets are listed with the hidden ones: that is where they are returned from.
+  const hidden = widgets?.filter((w) => w.hidden || w.desktop) ?? [];
+  const desktopOn = isEnabled("desktop_widgets");
   const addable = catalog?.filter((c) => c.available) ?? [];
   const widgetsOn = isEnabled("widgets");
 
@@ -278,11 +280,15 @@ export default function Dashboard() {
                           className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left hover:bg-zinc-200 dark:hover:bg-zinc-800"
                           onClick={() => {
                             hiddenMenu.setOpen(false);
-                            patch(w, { hidden: false });
+                            if (w.desktop) run(() => api.desktopWidgetAttach(w.id)).then(load);
+                            else patch(w, { hidden: false });
                           }}
                         >
-                          <span className="truncate">{w.title}</span>
-                          <span className="text-xs text-accent-600 dark:text-accent-400">{D.showAgain}</span>
+                          <span className="min-w-0 truncate">
+                            {w.title}
+                            {w.desktop && <span className="block text-xs text-zinc-500">{t.widgets.onDesktopBadge}</span>}
+                          </span>
+                          <span className="shrink-0 text-xs text-accent-600 dark:text-accent-400">{w.desktop ? t.widgets.toApp : D.showAgain}</span>
                         </button>
                       </li>
                     ))}
@@ -364,6 +370,7 @@ export default function Dashboard() {
             onHide: () => patch(w, { hidden: true }),
             onRemove: () => setRemoving(w),
             onSettings: () => setEditing(w),
+            onDesktop: desktopOn ? () => run(() => api.desktopWidgetDetach(w.id)).then((p) => p && load()) : undefined,
           })}
         />
       )}

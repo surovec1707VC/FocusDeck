@@ -1,5 +1,5 @@
 import { HTMLAttributes, KeyboardEvent, PointerEvent } from "react";
-import { ChevronDown, ChevronUp, EyeOff, GripVertical, Pin, PinOff, Settings2, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, EyeOff, GripVertical, MonitorUp, Pin, PinOff, Settings2, Trash2 } from "lucide-react";
 import { t } from "../../i18n";
 import { Widget } from "../../lib/api";
 import { useModules } from "../../lib/modules-context";
@@ -11,6 +11,8 @@ export interface FrameActions {
   onHide: () => void;
   onRemove: () => void;
   onSettings: () => void;
+  /** Detach into a desktop window; absent when the Desktop widgets module is off. */
+  onDesktop?: () => void;
 }
 
 interface Props extends FrameActions {
@@ -25,7 +27,7 @@ interface Props extends FrameActions {
 }
 
 /** A widget card: title bar with controls, the body, and a resize corner. */
-export default function WidgetFrame({ widget, dragHandle, resizeHandle, dragging, onPin, onCollapse, onHide, onRemove, onSettings }: Props) {
+export default function WidgetFrame({ widget, dragHandle, resizeHandle, dragging, onPin, onCollapse, onHide, onRemove, onSettings, onDesktop }: Props) {
   const showTitles = useModules().settingsOf("widgets").show_titles !== false;
   const W = t.widgets;
   const { icon: Icon, Body } = WIDGET_UI[widget.kind] ?? WIDGET_UI.status;
@@ -72,6 +74,11 @@ export default function WidgetFrame({ widget, dragHandle, resizeHandle, dragging
           >
             {widget.collapsed ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
           </button>
+          {onDesktop && (
+            <button type="button" className={button} onClick={onDesktop} title={W.toDesktop} aria-label={W.toDesktop}>
+              <MonitorUp className="size-3.5" />
+            </button>
+          )}
           <button type="button" className={button} onClick={onHide} title={W.hide} aria-label={W.hide}>
             <EyeOff className="size-3.5" />
           </button>

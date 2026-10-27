@@ -78,6 +78,7 @@ mod tests {
                 "connector_logs",
                 "connector_settings",
                 "connectors",
+                "desktop_widgets",
                 "dev_git_repos",
                 "dev_projects",
                 "module_logs",
