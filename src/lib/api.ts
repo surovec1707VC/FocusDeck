@@ -261,7 +261,8 @@ export type WidgetKind =
   | "notifications"
   | "weather"
   | "status"
-  | "git";
+  | "git"
+  | "media";
 
 export type WidgetCategory = "time" | "productivity" | "system" | "information";
 export type DataSource = "local" | "database" | "config" | "system" | "clipboard" | "network";
@@ -281,6 +282,35 @@ export interface Widget {
   pinned: boolean;
   collapsed: boolean;
   hidden: boolean;
+  /** Detached into its own window on the Windows desktop. */
+  desktop: boolean;
+}
+
+/** Where a desktop widget window is (physical pixels; null = not placed yet). */
+export interface DesktopPlacement {
+  widget_id: string;
+  x: number | null;
+  y: number | null;
+  width: number;
+  height: number;
+}
+
+/** What is playing in Windows (GSMTC). */
+export interface NowPlaying {
+  active: boolean;
+  title: string;
+  artist: string;
+  album: string;
+  source_id: string;
+  source: string;
+  status: "playing" | "paused" | "stopped" | "changing" | "closed" | "opened";
+  cover: string | null;
+  can_play: boolean;
+  can_pause: boolean;
+  can_next: boolean;
+  can_previous: boolean;
+  position_ms: number | null;
+  duration_ms: number | null;
 }
 
 export interface WidgetPatch {
@@ -906,6 +936,12 @@ export const api = {
   widgetAction: <T = any>(id: string, action: string, payload?: Record<string, unknown>, params?: Record<string, unknown>) =>
     call<WidgetData<T>>("widget_action", { id, action, payload, params }),
   widgetPickApp: () => call<PickedApp | null>("widget_pick_app"),
+  desktopWidgetsList: () => call<DesktopPlacement[]>("desktop_widgets_list"),
+  desktopWidgetGet: (id: string) => call<Widget>("desktop_widget_get", { id }),
+  desktopWidgetDetach: (id: string) => call<DesktopPlacement>("desktop_widget_detach", { id }),
+  desktopWidgetAttach: (id: string) => call<void>("desktop_widget_attach", { id }),
+  mediaNowPlaying: () => call<NowPlaying>("media_now_playing"),
+  mediaControl: (action: "play_pause" | "next" | "previous") => call<NowPlaying>("media_control", { action }),
 
   tasksList: () => call<Task[]>("tasks_list"),
   tasksAdd: (title: string) => call<Task[]>("tasks_add", { title }),
@@ -1095,6 +1131,8 @@ export const EVENTS = {
   actionLog: "focusdeck://action-log",
   terminalOutput: "focusdeck://terminal-output",
   updateAvailable: "focusdeck://update-available",
+  mediaChanged: "focusdeck://media-changed",
+  desktopWidgetsChanged: "focusdeck://desktop-widgets-changed",
 } as const;
 
 // --- Developer Tools ---

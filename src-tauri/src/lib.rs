@@ -14,6 +14,7 @@ mod hotkeys;
 mod info;
 mod integrations;
 mod logging;
+mod media;
 mod modules;
 mod notifications;
 mod paths;
@@ -88,6 +89,10 @@ fn setup(app: &mut App) -> anyhow::Result<()> {
     }
     background::reconcile_all(&handle);
     tauri::async_runtime::spawn(updates::startup_check(handle.clone()));
+    {
+        let h = handle.clone();
+        tauri::async_runtime::spawn(async move { widgets::desktop::restore(&h).await });
+    }
     if automations_on {
         let h = handle.clone();
         tauri::async_runtime::spawn(async move { automation::engine::run_startup_automations(&h).await });
@@ -144,6 +149,10 @@ pub fn run() {
     plugins::register(tauri::Builder::default())
         .setup(|app| setup(app).map_err(|e| e.into()))
         .on_window_event(|window, event| {
+            // Desktop widget windows close normally; only the main window goes to the tray.
+            if window.label() != window::MAIN {
+                return;
+            }
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let app = window.app_handle();
                 let state = app.state::<AppState>();
@@ -228,6 +237,12 @@ pub fn run() {
             widgets::widget_data,
             widgets::widget_action,
             widgets::widget_pick_app,
+            widgets::desktop::desktop_widgets_list,
+            widgets::desktop::desktop_widget_get,
+            widgets::desktop::desktop_widget_detach,
+            widgets::desktop::desktop_widget_attach,
+            media::media_now_playing,
+            media::media_control,
             productivity::notes::notes_list,
             productivity::notes::notes_facets,
             productivity::notes::notes_create,

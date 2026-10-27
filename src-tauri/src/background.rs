@@ -3,7 +3,7 @@
 
 use tauri::{AppHandle, Manager};
 
-use crate::modules::catalog::{AUTOMATIONS, CLIPBOARD, ORGANIZER, TIMERS};
+use crate::modules::catalog::{AUTOMATIONS, CLIPBOARD, ORGANIZER, TIMERS, WIDGET_MEDIA};
 use crate::state::AppState;
 
 fn spawn_for(app: &AppHandle, module_id: &str) -> Option<tauri::async_runtime::JoinHandle<()>> {
@@ -12,12 +12,13 @@ fn spawn_for(app: &AppHandle, module_id: &str) -> Option<tauri::async_runtime::J
         ORGANIZER => Some(tauri::async_runtime::spawn(crate::organizer::watch_loop(app.clone()))),
         TIMERS => Some(tauri::async_runtime::spawn(crate::productivity::timers::tick_loop(app.clone()))),
         CLIPBOARD => Some(tauri::async_runtime::spawn(crate::clipboard_hub::poll_loop(app.clone()))),
+        WIDGET_MEDIA => Some(tauri::async_runtime::spawn(crate::media::watch_loop(app.clone()))),
         _ => None,
     }
 }
 
 /// Modules that own a background task.
-pub const OWNERS: &[&str] = &[AUTOMATIONS, CLIPBOARD, TIMERS, ORGANIZER];
+pub const OWNERS: &[&str] = &[AUTOMATIONS, CLIPBOARD, TIMERS, ORGANIZER, WIDGET_MEDIA];
 
 /// Starts or stops a module's task to match its enabled state.
 pub fn reconcile(app: &AppHandle, module_id: &str) {

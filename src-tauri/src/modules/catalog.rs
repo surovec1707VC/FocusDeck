@@ -6,7 +6,7 @@ use super::types::{Category, ModuleDef};
 use crate::permissions::{
     PERM_AUTOSTART, PERM_CLIPBOARD_READ, PERM_FS_READ, PERM_GLOBAL_HOTKEYS, PERM_LAUNCH_APPS,
     PERM_NETWORK_WEATHER, PERM_NOTIFICATIONS, PERM_PASTE, PERM_WINDOWS, PERM_MOVE_FILES,
-    PERM_NETWORK_API, PERM_NETWORK_UPDATES, PERM_RUN_COMMANDS,
+    PERM_NETWORK_API, PERM_NETWORK_UPDATES, PERM_RUN_COMMANDS, PERM_MEDIA,
 };
 
 // Critical modules (confirmation required to turn off).
@@ -58,6 +58,8 @@ pub const WIDGET_NOTIFICATIONS: &str = "widget_notifications";
 pub const WIDGET_CALENDAR: &str = "widget_calendar";
 pub const WIDGET_COUNTDOWN: &str = "widget_countdown";
 pub const WIDGET_STOPWATCH: &str = "widget_stopwatch";
+pub const WIDGET_MEDIA: &str = "widget_media";
+pub const DESKTOP_WIDGETS: &str = "desktop_widgets";
 
 /// Features that exist only as storage/placeholder so far.
 pub const IN_DEVELOPMENT: &[&str] = &[FILES];
@@ -195,6 +197,22 @@ pub const BUILTIN: &[ModuleDef] = &[
         requires_restart: false,
         permissions: &[],
         settings_schema: no_settings,
+    },
+    ModuleDef {
+        id: DESKTOP_WIDGETS,
+        name: "Виджеты на рабочем столе",
+        description: "Любой виджет можно открепить от сетки в отдельное окно на рабочем столе Windows.",
+        details: "Каждый открепленный виджет — отдельное окно без рамки и фона: его можно двигать и менять размер,                   положение и размер запоминаются между запусками. Вернуть виджет в приложение можно кнопкой в его окне                   или в меню «Скрытые» на обзоре. Если отключить, окна закрываются, а виджеты остаются откреплёнными                   и появятся снова, когда модуль включат.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "always_on_top": { "type": "boolean", "title": "Поверх других окон (иначе — под окнами, как на рабочем столе)", "default": false },
+            "restore_on_start": { "type": "boolean", "title": "Открывать виджеты при запуске FocusDeck", "default": true }
+        }}),
     },
     ModuleDef {
         id: LAYOUTS,
@@ -812,6 +830,23 @@ pub const BUILTIN: &[ModuleDef] = &[
         permissions: &[],
         settings_schema: || json!({ "type": "object", "properties": {
             "show_ms": { "type": "boolean", "title": "Показывать сотые", "default": true }
+        }}),
+    },
+    ModuleDef {
+        id: WIDGET_MEDIA,
+        name: "Виджет «Музыка»",
+        description: "Что сейчас играет в Windows: трек, исполнитель, обложка и кнопки управления.",
+        details: "Данные берутся из системных медиа-элементов Windows (Global System Media Transport Controls):                   Spotify, браузеры, Яндекс Музыка, «Медиаплеер» и другие программы, которые их поддерживают.                   Нужно разрешение «Медиа: что сейчас играет». Ничего не сохраняется и не отправляется в сеть.                   Если отключить, виджет скрывается во всех макетах и фоновое отслеживание останавливается.",
+        category: Category::Widgets,
+        version: "1.0.0",
+        enabled_by_default: true,
+        critical: false,
+        requires_restart: false,
+        permissions: &[PERM_MEDIA],
+        settings_schema: || json!({ "type": "object", "properties": {
+            "show_cover": { "type": "boolean", "title": "Показывать обложку", "default": true },
+            "show_equalizer": { "type": "boolean", "title": "Показывать эквалайзер", "default": true },
+            "show_source": { "type": "boolean", "title": "Показывать программу-источник", "default": true }
         }}),
     },
 ];

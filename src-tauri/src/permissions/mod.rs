@@ -30,6 +30,7 @@ pub const PERM_UI_AUTOMATION: &str = "ui.automation";
 pub const PERM_GIT: &str = "dev.git";
 pub const PERM_NETWORK_API: &str = "network.api_tester";
 pub const PERM_NETWORK_UPDATES: &str = "network.updates";
+pub const PERM_MEDIA: &str = "system.media";
 
 struct Definition {
     id: &'static str,
@@ -172,6 +173,12 @@ const DEFINITIONS: &[Definition] = &[
         description: "Запрашивать у сервера релизов сведения о новой версии и скачивать подписанное обновление (установка — только с вашего подтверждения).",
         granted_by_default: false,
     },
+    Definition {
+        id: PERM_MEDIA,
+        name: "Медиа: что сейчас играет",
+        description: "Читать название, исполнителя и обложку текущего трека из системных медиа-элементов Windows                       (Spotify, браузер, Яндекс Музыка и др.) и переключать воспроизведение. Ничего не сохраняется.",
+        granted_by_default: false,
+    },
 ];
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
@@ -301,6 +308,7 @@ pub fn category(id: &str) -> &'static str {
         PERM_LAUNCH_APPS | PERM_RUN_COMMANDS | PERM_CLOSE_APPS | PERM_AUTOSTART | PERM_GIT => "processes",
         PERM_NETWORK_WEATHER | PERM_NETWORK_API | PERM_NETWORK_UPDATES => "network",
         PERM_NOTIFICATIONS => "notifications",
+        PERM_MEDIA => "system",
         _ => "system",
     }
 }

@@ -149,3 +149,38 @@ a:focus-visible,
 @utility popover {
   @apply z-40 rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-zinc-800 dark:bg-zinc-900;
 }
+
+/* Music widget equalizer: transform-only bars; still while paused or with reduced motion. */
+.equalizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.equalizer span {
+  width: 3px;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--color-accent-500);
+  transform-origin: bottom;
+  transform: scaleY(0.25);
+  transition: transform 300ms ease-out;
+}
+.equalizer.is-playing span {
+  animation: eq-bounce 900ms ease-in-out infinite alternate;
+}
+.equalizer.is-playing span:nth-child(2) { animation-duration: 700ms; animation-delay: -200ms; }
+.equalizer.is-playing span:nth-child(3) { animation-duration: 1100ms; animation-delay: -500ms; }
+.equalizer.is-playing span:nth-child(4) { animation-duration: 800ms; animation-delay: -350ms; }
+.equalizer.is-playing span:nth-child(5) { animation-duration: 1000ms; animation-delay: -650ms; }
+@keyframes eq-bounce {
+  0% { transform: scaleY(0.2); }
+  50% { transform: scaleY(1); }
+  100% { transform: scaleY(0.45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .equalizer.is-playing span { animation: none; }
+  .equalizer.is-playing span:nth-child(odd) { transform: scaleY(0.7); }
+  .equalizer.is-playing span:nth-child(even) { transform: scaleY(0.45); }
+}

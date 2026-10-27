@@ -12,7 +12,7 @@ use super::{Widget, clipboard, def, set_config, system, valid_app_path, valid_li
 use crate::db::new_id;
 use crate::error::{AppError, AppResult};
 use crate::modules::{catalog::*, registry};
-use crate::permissions::{self, PERM_CLIPBOARD_READ, PERM_LAUNCH_APPS};
+use crate::permissions::{self, PERM_CLIPBOARD_READ, PERM_LAUNCH_APPS, PERM_MEDIA};
 use crate::state::AppState;
 
 #[derive(Debug, Clone, Serialize)]
@@ -117,6 +117,16 @@ pub async fn load(app: &AppHandle, w: &Widget, params: &Value, force: bool) -> A
             "now_ms": now_ms(),
         })),
         "status" => Fetched::now(serde_json::to_value(crate::info::stats(app).await?)?),
+        "media" => {
+            if !permissions::is_granted(db, PERM_MEDIA).await? {
+                Fetched::now(json!({ "permission": false }))
+            } else {
+                match crate::media::now_playing(settings.get("show_cover").and_then(Value::as_bool).unwrap_or(true)).await {
+                    Ok(now) => Fetched::now(json!({ "permission": true, "now": now })),
+                    Err(e) => Fetched { error: Some(e.to_string()), ..Fetched::now(json!({ "permission": true, "now": null })) },
+                }
+            }
+        }
         other => return Err(AppError::Invalid(format!("неизвестный тип виджета {other}"))),
     };
     Ok(WidgetData {
@@ -369,6 +379,9 @@ pub async fn act(app: &AppHandle, w: &Widget, action: &str, p: &Value) -> AppRes
                 .bind(&note.id)
                 .execute(db)
                 .await?;
+        }
+        ("media", control) => {
+            crate::media::control(app, crate::media::Control::parse(control)?).await?;
         }
         ("todo", "add") => crate::workspace::add_task(db, text(p, "title")?).await?,
         ("todo", "toggle") => crate::workspace::toggle_task(db, text(p, "id")?).await?,

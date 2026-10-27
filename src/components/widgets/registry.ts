@@ -12,6 +12,7 @@ import {
   GitBranch,
   Link2,
   ListTodo,
+  Music,
   LucideIcon,
   NotebookPen,
   Timer,
@@ -22,6 +23,7 @@ import { BodyProps } from "./common";
 import { AppLauncherWidget, NotesWidget, QuickLinksWidget, TodoWidget } from "./ProductivityWidgets";
 import { ClipboardWidget, NotificationsWidget, StatusWidget, SystemInfoWidget, WeatherWidget } from "./InfoWidgets";
 import { GitWidget } from "./DevWidgets";
+import { MediaWidget } from "./MediaWidget";
 import { CalendarWidget, ClockWidget, CountdownWidget, DateWidget, StopwatchWidget } from "./WidgetBodies";
 
 /** UI side of each widget kind; the definitions themselves come from the backend catalog. */
@@ -41,4 +43,5 @@ export const WIDGET_UI: Record<WidgetKind, { icon: LucideIcon; Body: ComponentTy
   weather: { icon: CloudSun, Body: WeatherWidget },
   status: { icon: Activity, Body: StatusWidget },
   git: { icon: GitBranch, Body: GitWidget },
+  media: { icon: Music, Body: MediaWidget },
 };

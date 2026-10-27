@@ -59,6 +59,11 @@ pub async fn apply_enabled(app: &AppHandle, id: &str) -> AppResult<Vec<String>> 
         }
     }
 
+    // Desktop widget windows follow their module and the modules of their widgets.
+    if let Err(e) = crate::widgets::desktop::sync(app).await {
+        warnings.push(e.to_string());
+    }
+
     if registry::def(id)?.requires_restart {
         state.pending_restart.lock().unwrap().insert(id.to_string());
     }
@@ -72,6 +77,9 @@ pub async fn apply_enabled(app: &AppHandle, id: &str) -> AppResult<Vec<String>> 
 /// Applies changed settings of a module.
 pub async fn apply_settings(app: &AppHandle, id: &str) -> AppResult<()> {
     let state = app.state::<AppState>();
+    if id == crate::modules::catalog::DESKTOP_WIDGETS {
+        crate::widgets::desktop::apply_settings(app).await;
+    }
     if id == AUTOMATIONS {
         // New scheduler period.
         crate::background::restart(app, AUTOMATIONS);
