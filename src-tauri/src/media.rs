@@ -106,7 +106,7 @@ mod imp {
         GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
     };
     use windows::Storage::Streams::{Buffer, DataReader, InputStreamOptions};
-    use windows::Win32::Foundation::{RPC_E_CALL_REJECTED, RPC_E_SERVERCALL_RETRYLATER};
+    use windows::Win32::Foundation::{RPC_E_CALL_CANCELED, RPC_E_CALL_REJECTED, RPC_E_SERVERCALL_RETRYLATER};
     use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
 
     use super::{Control, NowPlaying, source_name};
@@ -114,6 +114,12 @@ mod imp {
     /// Attempts for a call the media service rejected as busy.
     const ATTEMPTS: u32 = 4;
     const RETRY_DELAY: Duration = Duration::from_millis(120);
+    /// After a timed-out call (the service hangs ~10 s, then cancels) the service
+    /// is left alone for a while instead of blocking every poll.
+    const HUNG_PAUSE: Duration = Duration::from_secs(15);
+
+    /// Until when the media service is considered hung.
+    static HUNG_UNTIL: Mutex<Option<std::time::Instant>> = Mutex::new(None);
 
     type Job = Box<dyn FnOnce() + Send>;
 
@@ -124,7 +130,7 @@ mod imp {
 
     /// Runs `f` on one long-lived MTA thread. Pool threads may already be
     /// single-threaded apartments without a message loop, where WinRT calls get
-    /// rejected with RPC_E_CALL_REJECTED (0x80010002).
+    /// rejected with RPC_E_CALL_REJECTED (0x80010001).
     fn on_media_thread<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> Result<T, String> {
         static TX: OnceLock<Mutex<mpsc::Sender<Job>>> = OnceLock::new();
         let tx = TX.get_or_init(|| {
@@ -154,16 +160,32 @@ mod imp {
         result.recv().map_err(|_| stopped())
     }
 
-    /// The service or the source app was busy; worth another try.
+    /// The service or the source app was busy or did not answer; worth another try later.
     fn transient(e: &windows::core::Error) -> bool {
-        e.code() == RPC_E_CALL_REJECTED || e.code() == RPC_E_SERVERCALL_RETRYLATER
+        e.code() == RPC_E_CALL_REJECTED || e.code() == RPC_E_SERVERCALL_RETRYLATER || hung(e)
     }
 
-    /// Repeats `f` while it fails with a transient error; the manager is recreated.
+    /// RPC_E_CALL_CANCELED (0x80010002): the call waited ~10 s and was cancelled.
+    fn hung(e: &windows::core::Error) -> bool {
+        e.code() == RPC_E_CALL_CANCELED
+    }
+
+    /// The media service did not answer recently.
+    fn paused() -> bool {
+        HUNG_UNTIL.lock().unwrap().is_some_and(|t| std::time::Instant::now() < t)
+    }
+
+    /// Repeats `f` while it fails with a quick transient error; the manager is
+    /// recreated. A hung service is not retried (each try would block ~10 s).
     fn retry<T>(mut f: impl FnMut() -> windows::core::Result<T>) -> windows::core::Result<T> {
         let mut attempt = 1;
         loop {
             match f() {
+                Err(e) if hung(&e) => {
+                    MANAGER.with(|m| m.borrow_mut().take());
+                    *HUNG_UNTIL.lock().unwrap() = Some(std::time::Instant::now() + HUNG_PAUSE);
+                    return Err(e);
+                }
                 Err(e) if transient(&e) && attempt < ATTEMPTS => {
                     MANAGER.with(|m| m.borrow_mut().take());
                     std::thread::sleep(RETRY_DELAY * attempt);
@@ -199,7 +221,31 @@ mod imp {
             }
         };
         // No session: the call fails with a null result.
-        soft(manager.GetCurrentSession())
+        let current = soft(manager.GetCurrentSession())?;
+        // Windows' «current» session is often a paused browser tab while another
+        // app plays: prefer a playing session, then one that has a title.
+        let mut all: Vec<Session> = current.iter().cloned().collect();
+        if let Some(list) = soft(manager.GetSessions())? {
+            all.extend(list);
+        }
+        let is_playing = |s: &Session| -> windows::core::Result<bool> {
+            Ok(soft(s.GetPlaybackInfo())?.and_then(|i| i.PlaybackStatus().ok()) == Some(Status::Playing))
+        };
+        let has_title = |s: &Session| -> windows::core::Result<bool> {
+            let props = soft(s.TryGetMediaPropertiesAsync().and_then(|op| op.join()))?;
+            Ok(props.and_then(|p| p.Title().ok()).is_some_and(|t| !t.is_empty()))
+        };
+        for s in &all {
+            if is_playing(s)? {
+                return Ok(Some(s.clone()));
+            }
+        }
+        for s in &all {
+            if has_title(s)? {
+                return Ok(Some(s.clone()));
+            }
+        }
+        Ok(current)
     }
 
     fn cover(s: &Session, key: &str) -> Option<String> {
@@ -236,13 +282,20 @@ mod imp {
     /// The last good reading, shown while the service keeps rejecting calls.
     static LAST: Mutex<Option<NowPlaying>> = Mutex::new(None);
 
+    const NOT_ANSWERING: &str =
+        "Windows не отвечает на запрос «что сейчас играет». Обычно помогает перезапустить браузер или музыкальное приложение; FocusDeck повторит попытку сам.";
+
     pub fn now_playing(with_cover: bool) -> Result<NowPlaying, String> {
+        let last = || LAST.lock().unwrap().clone().ok_or_else(|| NOT_ANSWERING.to_string());
+        if paused() {
+            return last();
+        }
         match on_media_thread(move || retry(|| read(with_cover)))? {
             Ok(now) => {
                 *LAST.lock().unwrap() = Some(now.clone());
                 Ok(now)
             }
-            Err(e) if transient(&e) => LAST.lock().unwrap().clone().ok_or_else(|| "медиа-элементы Windows заняты, повторите позже".into()),
+            Err(e) if transient(&e) => last(),
             Err(e) => Err(format!("медиа-элементы Windows недоступны: {e}")),
         }
     }
@@ -306,6 +359,9 @@ mod imp {
     }
 
     pub fn control(c: Control) -> Result<bool, String> {
+        if paused() {
+            return Err(NOT_ANSWERING.into());
+        }
         let result = on_media_thread(move || {
             retry(|| {
                 let Some(s) = session()? else { return Ok(None) };
@@ -320,6 +376,7 @@ mod imp {
         match result {
             Ok(Some(ok)) => Ok(ok),
             Ok(None) => Err("сейчас ничего не играет".into()),
+            Err(e) if hung(&e) => Err(NOT_ANSWERING.into()),
             Err(e) if transient(&e) => Err("медиа-элементы Windows заняты, повторите команду".into()),
             Err(e) => Err(e.to_string()),
         }
@@ -348,6 +405,22 @@ mod imp {
             assert!(soft::<()>(Err(RPC_E_CALL_REJECTED.into())).is_err());
             // Runs on the media thread and returns the value.
             assert_eq!(on_media_thread(|| 7).unwrap(), 7);
+
+            // A hung service (call cancelled after the timeout) is not retried and pauses polling.
+            let mut calls = 0;
+            let hung_call: windows::core::Result<()> = retry(|| {
+                calls += 1;
+                Err(RPC_E_CALL_CANCELED.into())
+            });
+            assert!(hung_call.is_err() && calls == 1 && paused());
+            *HUNG_UNTIL.lock().unwrap() = None;
+        }
+
+        /// Reads the real sessions of this machine: `cargo test live_now_playing -- --ignored --nocapture`.
+        #[test]
+        #[ignore]
+        fn live_now_playing() {
+            println!("{:?}", now_playing(false));
         }
     }
 }
