@@ -18,6 +18,10 @@ pub enum Theme {
     Dark,
     Light,
     System,
+    /// Dark bento grid: near-black surface, violet accent, large radii.
+    Bento,
+    /// Light frosted glass on a pastel gradient.
+    Glass,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -180,6 +184,8 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(load(&pool).await.unwrap().theme, Theme::Dark);
+        assert_eq!(serde_json::to_value(Theme::Glass).unwrap(), "glass");
+        assert_eq!(serde_json::from_value::<Theme>("bento".into()).unwrap(), Theme::Bento);
     }
 
     #[test]
