@@ -96,7 +96,9 @@ pub fn source_name(id: &str) -> String {
 
 #[cfg(windows)]
 mod imp {
-    use std::sync::Mutex;
+    use std::cell::RefCell;
+    use std::sync::{Mutex, OnceLock, mpsc};
+    use std::time::Duration;
 
     use base64::Engine;
     use windows::Media::Control::{
@@ -104,9 +106,82 @@ mod imp {
         GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
     };
     use windows::Storage::Streams::{Buffer, DataReader, InputStreamOptions};
+    use windows::Win32::Foundation::{RPC_E_CALL_REJECTED, RPC_E_SERVERCALL_RETRYLATER};
     use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
 
     use super::{Control, NowPlaying, source_name};
+
+    /// Attempts for a call the media service rejected as busy.
+    const ATTEMPTS: u32 = 4;
+    const RETRY_DELAY: Duration = Duration::from_millis(120);
+
+    type Job = Box<dyn FnOnce() + Send>;
+
+    thread_local! {
+        /// The session manager, created once on the media thread.
+        static MANAGER: RefCell<Option<Manager>> = const { RefCell::new(None) };
+    }
+
+    /// Runs `f` on one long-lived MTA thread. Pool threads may already be
+    /// single-threaded apartments without a message loop, where WinRT calls get
+    /// rejected with RPC_E_CALL_REJECTED (0x80010002).
+    fn on_media_thread<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> Result<T, String> {
+        static TX: OnceLock<Mutex<mpsc::Sender<Job>>> = OnceLock::new();
+        let tx = TX.get_or_init(|| {
+            let (tx, rx) = mpsc::channel::<Job>();
+            std::thread::Builder::new()
+                .name("focusdeck-media".into())
+                .spawn(move || {
+                    // SAFETY: this thread is ours and joins the multithreaded apartment once.
+                    unsafe {
+                        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+                    }
+                    for job in rx {
+                        job();
+                    }
+                })
+                .expect("media thread");
+            Mutex::new(tx)
+        });
+        let stopped = || "поток медиа-элементов остановлен".to_string();
+        let (done, result) = mpsc::sync_channel(1);
+        tx.lock()
+            .unwrap()
+            .send(Box::new(move || {
+                let _ = done.send(f());
+            }))
+            .map_err(|_| stopped())?;
+        result.recv().map_err(|_| stopped())
+    }
+
+    /// The service or the source app was busy; worth another try.
+    fn transient(e: &windows::core::Error) -> bool {
+        e.code() == RPC_E_CALL_REJECTED || e.code() == RPC_E_SERVERCALL_RETRYLATER
+    }
+
+    /// Repeats `f` while it fails with a transient error; the manager is recreated.
+    fn retry<T>(mut f: impl FnMut() -> windows::core::Result<T>) -> windows::core::Result<T> {
+        let mut attempt = 1;
+        loop {
+            match f() {
+                Err(e) if transient(&e) && attempt < ATTEMPTS => {
+                    MANAGER.with(|m| m.borrow_mut().take());
+                    std::thread::sleep(RETRY_DELAY * attempt);
+                    attempt += 1;
+                }
+                other => return other,
+            }
+        }
+    }
+
+    /// A value, or `None` for a non-transient failure (treated as «no data»).
+    fn soft<T>(r: windows::core::Result<T>) -> windows::core::Result<Option<T>> {
+        match r {
+            Ok(v) => Ok(Some(v)),
+            Err(e) if transient(&e) => Err(e),
+            Err(_) => Ok(None),
+        }
+    }
 
     /// Max cover size we embed (bigger thumbnails are skipped).
     const MAX_COVER: u32 = 2 * 1024 * 1024;
@@ -115,16 +190,16 @@ mod imp {
     static COVER: Mutex<Option<(String, Option<String>)>> = Mutex::new(None);
 
     fn session() -> windows::core::Result<Option<Session>> {
-        // SAFETY: initializes COM for this blocking thread; S_FALSE / changed mode are fine.
-        unsafe {
-            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        }
-        let manager = Manager::RequestAsync()?.join()?;
-        match manager.GetCurrentSession() {
-            Ok(s) => Ok(Some(s)),
-            // No session: the call fails with a null result.
-            Err(_) => Ok(None),
-        }
+        let manager = match MANAGER.with(|m| m.borrow().clone()) {
+            Some(m) => m,
+            None => {
+                let m = Manager::RequestAsync()?.join()?;
+                MANAGER.with(|slot| *slot.borrow_mut() = Some(m.clone()));
+                m
+            }
+        };
+        // No session: the call fails with a null result.
+        soft(manager.GetCurrentSession())
     }
 
     fn cover(s: &Session, key: &str) -> Option<String> {
@@ -158,12 +233,26 @@ mod imp {
         c
     }
 
+    /// The last good reading, shown while the service keeps rejecting calls.
+    static LAST: Mutex<Option<NowPlaying>> = Mutex::new(None);
+
     pub fn now_playing(with_cover: bool) -> Result<NowPlaying, String> {
-        let Some(s) = session().map_err(|e| format!("медиа-элементы Windows недоступны: {e}"))? else {
+        match on_media_thread(move || retry(|| read(with_cover)))? {
+            Ok(now) => {
+                *LAST.lock().unwrap() = Some(now.clone());
+                Ok(now)
+            }
+            Err(e) if transient(&e) => LAST.lock().unwrap().clone().ok_or_else(|| "медиа-элементы Windows заняты, повторите позже".into()),
+            Err(e) => Err(format!("медиа-элементы Windows недоступны: {e}")),
+        }
+    }
+
+    fn read(with_cover: bool) -> windows::core::Result<NowPlaying> {
+        let Some(s) = session()? else {
             return Ok(NowPlaying { status: "closed".into(), ..Default::default() });
         };
-        let source_id = s.SourceAppUserModelId().map(|h| h.to_string()).unwrap_or_default();
-        let props = s.TryGetMediaPropertiesAsync().and_then(|op| op.join()).ok();
+        let source_id = soft(s.SourceAppUserModelId())?.map(|h| h.to_string()).unwrap_or_default();
+        let props = soft(s.TryGetMediaPropertiesAsync().and_then(|op| op.join()))?;
         let text = |f: &dyn Fn() -> windows::core::Result<windows::core::HSTRING>| f().map(|h| h.to_string()).unwrap_or_default();
         let (title, artist, album) = match &props {
             Some(p) => (
@@ -174,7 +263,7 @@ mod imp {
             None => Default::default(),
         };
         let artist = if artist.is_empty() { props.as_ref().map(|p| text(&|| p.AlbumArtist())).unwrap_or_default() } else { artist };
-        let info = s.GetPlaybackInfo().ok();
+        let info = soft(s.GetPlaybackInfo())?;
         let status = info
             .as_ref()
             .and_then(|i| i.PlaybackStatus().ok())
@@ -217,13 +306,49 @@ mod imp {
     }
 
     pub fn control(c: Control) -> Result<bool, String> {
-        let s = session().map_err(|e| e.to_string())?.ok_or_else(|| "сейчас ничего не играет".to_string())?;
-        let op = match c {
-            Control::PlayPause => s.TryTogglePlayPauseAsync(),
-            Control::Next => s.TrySkipNextAsync(),
-            Control::Previous => s.TrySkipPreviousAsync(),
-        };
-        op.and_then(|op| op.join()).map_err(|e| e.to_string())
+        let result = on_media_thread(move || {
+            retry(|| {
+                let Some(s) = session()? else { return Ok(None) };
+                let op = match c {
+                    Control::PlayPause => s.TryTogglePlayPauseAsync(),
+                    Control::Next => s.TrySkipNextAsync(),
+                    Control::Previous => s.TrySkipPreviousAsync(),
+                };
+                op.and_then(|op| op.join()).map(Some)
+            })
+        })?;
+        match result {
+            Ok(Some(ok)) => Ok(ok),
+            Ok(None) => Err("сейчас ничего не играет".into()),
+            Err(e) if transient(&e) => Err("медиа-элементы Windows заняты, повторите команду".into()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn retries_only_rejected_calls() {
+            let mut calls = 0;
+            let ok = retry(|| {
+                calls += 1;
+                if calls < 3 { Err(RPC_E_CALL_REJECTED.into()) } else { Ok(calls) }
+            });
+            assert_eq!(ok.unwrap(), 3);
+
+            let mut calls = 0;
+            let other: windows::core::Result<()> = retry(|| {
+                calls += 1;
+                Err(windows::core::Error::from(windows::Win32::Foundation::E_FAIL))
+            });
+            assert!(other.is_err() && calls == 1);
+            assert!(soft::<()>(Err(windows::Win32::Foundation::E_FAIL.into())).unwrap().is_none());
+            assert!(soft::<()>(Err(RPC_E_CALL_REJECTED.into())).is_err());
+            // Runs on the media thread and returns the value.
+            assert_eq!(on_media_thread(|| 7).unwrap(), 7);
+        }
     }
 }
 
