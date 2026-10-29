@@ -1,12 +1,17 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "desktop-widgets",
-  "description": "Desktop widget windows (label dw-<widget id>): app events, moving and resizing the frameless window.",
+  "description": "Desktop widget windows (label dw-<widget id>): app events, moving and resizing the frameless window, compact mode of the music widget.",
   "platforms": ["windows"],
   "windows": ["dw-*"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
-    "core:window:allow-start-resize-dragging"
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-set-size",
+    "core:window:allow-set-min-size",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-set-always-on-bottom",
+    "core:window:allow-set-focus"
   ]
 }

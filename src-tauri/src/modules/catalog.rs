@@ -846,7 +846,8 @@ pub const BUILTIN: &[ModuleDef] = &[
         settings_schema: || json!({ "type": "object", "properties": {
             "show_cover": { "type": "boolean", "title": "Показывать обложку", "default": true },
             "show_equalizer": { "type": "boolean", "title": "Показывать эквалайзер", "default": true },
-            "show_source": { "type": "boolean", "title": "Показывать программу-источник", "default": true }
+            "show_source": { "type": "boolean", "title": "Показывать программу-источник", "default": true },
+            "auto_compact": { "type": "boolean", "title": "На рабочем столе: сворачивать в мини-плеер поверх окон, когда фокус уходит в другое окно", "default": true }
         }}),
     },
 ];

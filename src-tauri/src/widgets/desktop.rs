@@ -158,6 +158,10 @@ fn track(app: &AppHandle, win: &WebviewWindow, widget_id: &str) {
                 return;
             }
             let (Ok(pos), Ok(size)) = (handle.outer_position(), handle.inner_size()) else { return };
+            // Smaller than the minimum only in the compact mode of the music widget.
+            if size.width < MIN_PX || size.height < MIN_PX {
+                return;
+            }
             let db = &app.state::<AppState>().db;
             if let Err(e) = save_geometry(db, &id, pos.x as i64, pos.y as i64, size.width as i64, size.height as i64).await {
                 tracing::warn!("desktop widget geometry: {e}");

@@ -225,8 +225,38 @@ fn validate_config(kind: &str, config: &Value) -> AppResult<()> {
         }
         _ => {}
     }
+    if let Some(a) = config.get("appearance").filter(|a| !a.is_null()) {
+        validate_appearance(a)?;
+    }
     if config.to_string().len() > MAX_CONFIG_BYTES {
         return Err(AppError::Invalid("настройки виджета слишком большие".into()));
+    }
+    Ok(())
+}
+
+pub const APPEARANCE_SHAPES: &[&str] = &["rounded", "square", "soft", "pill", "cut"];
+pub const APPEARANCE_TEXTURES: &[&str] = &["none", "glass", "gradient", "dots", "grid", "lines", "noise"];
+
+/// Look of a widget card: `{ shape, color, texture, opacity }`, every key optional.
+fn validate_appearance(a: &Value) -> AppResult<()> {
+    let bad = || AppError::Invalid("неверные параметры оформления виджета".into());
+    let Value::Object(map) = a else { return Err(bad()) };
+    let one_of = |key: &str, allowed: &[&str]| match map.get(key) {
+        None | Some(Value::Null) => Ok(()),
+        Some(Value::String(v)) if allowed.contains(&v.as_str()) => Ok(()),
+        _ => Err(bad()),
+    };
+    one_of("shape", APPEARANCE_SHAPES)?;
+    one_of("texture", APPEARANCE_TEXTURES)?;
+    match map.get("color") {
+        None | Some(Value::Null) => {}
+        Some(Value::String(c)) if c.len() == 7 && c.starts_with('#') && c[1..].chars().all(|ch| ch.is_ascii_hexdigit()) => {}
+        _ => return Err(bad()),
+    }
+    match map.get("opacity") {
+        None | Some(Value::Null) => {}
+        Some(v) if v.as_f64().is_some_and(|o| (0.2..=1.0).contains(&o)) => {}
+        _ => return Err(bad()),
     }
     Ok(())
 }
@@ -669,6 +699,12 @@ mod tests {
         assert_eq!(update(&pool, &w.id, good).await.unwrap().config["links"][0]["title"], "Почта");
 
         let n = insert(&pool, &layout, "notes", None, None).await.unwrap();
+        let look = WidgetPatch { config: Some(json!({ "appearance": { "shape": "pill", "color": "#12ab34", "texture": "dots", "opacity": 0.8 } })), ..Default::default() };
+        assert_eq!(update(&pool, &w.id, look).await.unwrap().config["appearance"]["shape"], "pill");
+        for a in [json!({ "shape": "star" }), json!({ "color": "red" }), json!({ "opacity": 0.05 }), json!("x")] {
+            let p = WidgetPatch { config: Some(json!({ "appearance": a })), ..Default::default() };
+            assert!(matches!(update(&pool, &w.id, p).await, Err(AppError::Invalid(_))));
+        }
         let hijack = WidgetPatch { config: Some(json!({ "note_id": "other" })), ..Default::default() };
         assert_eq!(update(&pool, &n.id, hijack).await.unwrap().config["note_id"], n.config["note_id"]);
     }
