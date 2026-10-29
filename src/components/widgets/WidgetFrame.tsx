@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, EyeOff, GripVertical, MonitorUp, Pin, PinOff, S
 import { t } from "../../i18n";
 import { Widget } from "../../lib/api";
 import { useModules } from "../../lib/modules-context";
+import { appearanceProps } from "../../lib/widget-appearance";
 import { WIDGET_UI } from "./registry";
 
 export interface FrameActions {
@@ -31,11 +32,13 @@ export default function WidgetFrame({ widget, dragHandle, resizeHandle, dragging
   const showTitles = useModules().settingsOf("widgets").show_titles !== false;
   const W = t.widgets;
   const { icon: Icon, Body } = WIDGET_UI[widget.kind] ?? WIDGET_UI.status;
+  const { className: lookClass, ...look } = appearanceProps(widget.config);
   const button = "rounded p-1 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200";
 
   return (
     <article
-      className={`card group/frame flex h-full flex-col overflow-hidden p-0 ${dragging ? "shadow-2xl ring-2 ring-accent-500/60" : ""} ${
+      {...look}
+      className={`card group/frame flex h-full flex-col overflow-hidden p-0 ${lookClass} ${dragging ? "shadow-2xl ring-2 ring-accent-500/60" : ""} ${
         widget.pinned ? "border-accent-500/40 dark:border-accent-500/40" : ""
       }`}
       aria-label={widget.title}

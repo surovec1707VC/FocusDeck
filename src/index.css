@@ -184,3 +184,53 @@ a:focus-visible,
   .equalizer.is-playing span:nth-child(odd) { transform: scaleY(0.7); }
   .equalizer.is-playing span:nth-child(even) { transform: scaleY(0.45); }
 }
+
+/* Custom look of a widget card (src/lib/widget-appearance.ts). */
+.widget-look {
+  --wa-color: #ffffff;
+  --wa-tex: rgb(113 113 122 / 0.22);
+  background-color: color-mix(in srgb, var(--wa-color) var(--wa-opacity), transparent) !important;
+  background-image: none;
+}
+.dark .widget-look:not([style*="--wa-color"]) { --wa-color: #18181b; }
+.widget-look[data-ink="light"] { color: #f4f4f5; --wa-tex: rgb(255 255 255 / 0.14); }
+.widget-look[data-ink="dark"] { color: #18181b; --wa-tex: rgb(0 0 0 / 0.12); }
+.widget-look[data-ink="dark"] .text-zinc-500 { color: #52525b; }
+.widget-look[data-ink="light"] .text-zinc-500 { color: #d4d4d8; }
+
+.widget-look[data-shape="rounded"] { border-radius: 0.75rem; }
+.widget-look[data-shape="square"] { border-radius: 2px; }
+.widget-look[data-shape="soft"] { border-radius: 1.75rem; }
+.widget-look[data-shape="pill"] { border-radius: 999px; }
+.widget-look[data-shape="pill"] > header { padding-inline: 1.25rem; }
+.widget-look[data-shape="pill"] > div { padding-inline: 1.5rem; }
+.widget-look[data-shape="cut"] {
+  border-radius: 0;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+
+.widget-look[data-texture="glass"] {
+  backdrop-filter: blur(14px) saturate(1.4);
+  background-image: linear-gradient(160deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0) 55%);
+  border-color: rgb(255 255 255 / 0.35);
+}
+.widget-look[data-texture="gradient"] {
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-500) 35%, transparent), transparent 70%);
+}
+.widget-look[data-texture="dots"] {
+  background-image: radial-gradient(var(--wa-tex) 1.2px, transparent 1.6px);
+  background-size: 12px 12px;
+}
+.widget-look[data-texture="grid"] {
+  background-image: linear-gradient(var(--wa-tex) 1px, transparent 1px), linear-gradient(90deg, var(--wa-tex) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.widget-look[data-texture="lines"] {
+  background-image: repeating-linear-gradient(45deg, var(--wa-tex) 0 1px, transparent 1px 9px);
+}
+.widget-look[data-texture="noise"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Compact mode of the music widget on the desktop. */
+.media-compact .equalizer { height: 16px; }

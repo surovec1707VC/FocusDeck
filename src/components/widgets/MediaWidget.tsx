@@ -21,6 +21,26 @@ function Equalizer({ playing }: { playing: boolean }) {
   );
 }
 
+/** One-line view of the desktop music widget while another window has focus. */
+export function MediaCompact({ widget }: BodyProps) {
+  const W = t.widgets;
+  const { data } = useWidgetData<MediaData>(widget, { events: [EVENTS.mediaChanged] });
+  const now = data?.permission ? data.now : null;
+  const playing = now?.status === "playing";
+  return (
+    <div className="media-compact flex h-full min-w-0 items-center gap-2.5">
+      <div className="relative size-9 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+        {now?.cover ? <img src={now.cover} alt="" className="size-full object-cover" draggable={false} /> : <Music className="absolute inset-0 m-auto size-4 text-zinc-400" />}
+      </div>
+      <div className="min-w-0 flex-1 leading-tight">
+        <div className="truncate text-sm font-semibold">{now?.active ? now.title || W.mediaUnknown : W.mediaNothing}</div>
+        {now?.active && now.artist && <div className="truncate text-xs text-zinc-500">{now.artist}</div>}
+      </div>
+      {now?.active && <Equalizer playing={playing} />}
+    </div>
+  );
+}
+
 export function MediaWidget({ widget }: BodyProps) {
   const W = t.widgets;
   const s = useModules().settingsOf("widget_media");

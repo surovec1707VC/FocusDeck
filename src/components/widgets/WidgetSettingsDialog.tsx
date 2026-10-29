@@ -4,6 +4,7 @@ import SettingsForm from "../SettingsForm";
 import { ErrorBanner, Field } from "../ui";
 import { t } from "../../i18n";
 import { api, errorText, Widget, WidgetCatalogEntry } from "../../lib/api";
+import { Appearance, appearanceOf, appearanceProps, COLOR_PRESETS, SHAPES, TEXTURES } from "../../lib/widget-appearance";
 
 interface Props {
   widget: Widget | null;
@@ -24,6 +25,7 @@ export default function WidgetSettingsDialog({ widget, entry, onClose, onSaved }
   const [apps, setApps] = useState<App[]>([]);
   const [duration, setDuration] = useState({ h: 0, m: 5, s: 0 });
   const [label, setLabel] = useState("");
+  const [look, setLook] = useState<Appearance | null>(null);
   const [error, setError] = useState<string | null>(null);
   const W = t.widgets;
 
@@ -40,6 +42,7 @@ export default function WidgetSettingsDialog({ widget, entry, onClose, onSaved }
     const ms = Number(c.duration_ms ?? 300_000);
     setDuration({ h: Math.floor(ms / 3_600_000), m: Math.floor((ms % 3_600_000) / 60_000), s: Math.floor((ms % 60_000) / 1000) });
     setLabel(String(c.label ?? ""));
+    setLook(appearanceOf(c));
     setError(null);
   }, [widget]);
 
@@ -47,7 +50,7 @@ export default function WidgetSettingsDialog({ widget, entry, onClose, onSaved }
     e.preventDefault();
     if (!widget) return;
     try {
-      const config = widget.kind === "quick_links" ? { links } : widget.kind === "app_launcher" ? { apps } : undefined;
+      const config = { ...(widget.kind === "quick_links" ? { links } : widget.kind === "app_launcher" ? { apps } : {}), appearance: look };
       let updated = await api.widgetsUpdate(widget.id, { title, config });
       if (widget.kind === "countdown") {
         const ms = ((duration.h * 60 + duration.m) * 60 + duration.s) * 1000;
@@ -171,6 +174,8 @@ export default function WidgetSettingsDialog({ widget, entry, onClose, onSaved }
               </div>
             )}
 
+            <AppearanceEditor value={look} onChange={setLook} title={title} />
+
             <div className="flex justify-end gap-2">
               <button type="button" className="btn-secondary" onClick={onClose}>
                 {t.common.cancel}
@@ -195,5 +200,75 @@ export default function WidgetSettingsDialog({ widget, entry, onClose, onSaved }
         </div>
       )}
     </dialog>
+  );
+}
+
+/** Shape, color, texture and opacity of the widget card, with a live preview. */
+function AppearanceEditor({ value, onChange, title }: { value: Appearance | null; onChange: (a: Appearance | null) => void; title: string }) {
+  const W = t.widgets;
+  const a: Appearance = value ?? {};
+  const set = (patch: Partial<Appearance>) => onChange({ shape: "rounded", texture: "none", opacity: 0.85, ...a, ...patch });
+  const chip = (active: boolean) =>
+    `rounded-lg border px-2 py-1 text-xs transition ${active ? "border-accent-500 bg-accent-500/10 text-accent-600 dark:text-accent-400" : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-700"}`;
+  const { className, ...preview } = appearanceProps({ appearance: value });
+
+  return (
+    <fieldset className="flex flex-col gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+      <legend className="sr-only">{W.look}</legend>
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked ? { shape: "rounded", texture: "none", opacity: 0.85 } : null)} />
+        {W.lookCustom}
+      </label>
+      {value && (
+        <>
+          <Field label={W.lookShape}>
+            <div className="flex flex-wrap gap-1">
+              {SHAPES.map((s) => (
+                <button key={s} type="button" className={chip((a.shape ?? "rounded") === s)} onClick={() => set({ shape: s })} aria-pressed={(a.shape ?? "rounded") === s}>
+                  {W.shapes[s]}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label={W.lookColor}>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button type="button" className={chip(!a.color)} onClick={() => set({ color: null })}>
+                {W.lookThemeColor}
+              </button>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`size-6 rounded-full border-2 ${a.color === c ? "border-accent-500" : "border-zinc-300 dark:border-zinc-700"}`}
+                  style={{ background: c }}
+                  onClick={() => set({ color: c })}
+                  title={c}
+                  aria-label={c}
+                />
+              ))}
+              <input type="color" className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" value={a.color ?? "#ffffff"} onChange={(e) => set({ color: e.target.value })} title={W.lookCustomColor} aria-label={W.lookCustomColor} />
+            </div>
+          </Field>
+          <Field label={W.lookTexture}>
+            <div className="flex flex-wrap gap-1">
+              {TEXTURES.map((x) => (
+                <button key={x} type="button" className={chip((a.texture ?? "none") === x)} onClick={() => set({ texture: x })} aria-pressed={(a.texture ?? "none") === x}>
+                  {W.textures[x]}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label={`${W.lookOpacity}: ${Math.round((a.opacity ?? 0.85) * 100)}%`}>
+            <input type="range" min={20} max={100} value={Math.round((a.opacity ?? 0.85) * 100)} onChange={(e) => set({ opacity: Number(e.target.value) / 100 })} />
+          </Field>
+          <div className="rounded-lg bg-[repeating-conic-gradient(#a1a1aa33_0_25%,transparent_0_50%)] bg-[length:16px_16px] p-3">
+            <div {...preview} className={`card flex h-20 flex-col justify-center p-0 px-4 text-sm ${className}`} aria-label={W.lookPreview}>
+              <span className="font-semibold">{title || W.lookPreview}</span>
+              <span className="text-xs text-zinc-500">{W.lookPreview}</span>
+            </div>
+          </div>
+        </>
+      )}
+    </fieldset>
   );
 }
