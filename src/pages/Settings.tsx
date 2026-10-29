@@ -11,7 +11,7 @@ import { AppSettings, Theme } from "../lib/api";
 import { useSettings } from "../lib/settings-context";
 import { attempt } from "../lib/use-async";
 
-const THEMES: Theme[] = ["dark", "light", "system"];
+const THEMES: Theme[] = ["dark", "light", "system", "bento", "glass"];
 
 export default function Settings() {
   const { settings, save } = useSettings();
@@ -109,7 +109,7 @@ export default function Settings() {
           <h2 className="mb-1 font-semibold">{S.appearance}</h2>
           <div className="py-3">
             <div className="mb-2 font-medium">{S.theme}</div>
-            <div role="radiogroup" aria-label={S.theme} className="inline-flex rounded-lg border border-zinc-300 p-0.5 dark:border-zinc-700">
+            <div role="radiogroup" aria-label={S.theme} className="inline-flex flex-wrap rounded-lg border border-zinc-300 p-0.5 dark:border-zinc-700">
               {THEMES.map((theme) => (
                 <button
                   key={theme}

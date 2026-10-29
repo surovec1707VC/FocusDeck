@@ -234,3 +234,58 @@ a:focus-visible,
 
 /* Compact mode of the music widget on the desktop. */
 .media-compact .equalizer { height: 16px; }
+
+/*
+ * Styled themes (Settings → Theme), on top of the dark/light palette:
+ * the zinc and accent scales are re-pointed, cards get their own shape.
+ */
+:root[data-theme="bento"] {
+  --color-zinc-950: #0b0b10;
+  --color-zinc-900: #161622;
+  --color-zinc-800: #2a2a3d;
+  --color-zinc-700: #3b3b55;
+  --color-zinc-600: #5b5b78;
+  --color-zinc-400: #a3a3bd;
+  --color-zinc-300: #c8c8dc;
+  --color-zinc-100: #ececf6;
+  --color-accent-300: oklch(0.82 0.1 290);
+  --color-accent-400: oklch(0.74 0.16 290);
+  --color-accent-500: oklch(0.65 0.21 290);
+  --color-accent-600: oklch(0.58 0.22 290);
+  --color-accent-700: oklch(0.5 0.2 290);
+}
+[data-theme="bento"] .app-shell { background: #0b0b10; }
+[data-theme="bento"] .card {
+  border-radius: 1.125rem;
+  border-color: #2a2a3d;
+  background-color: #161622;
+}
+[data-theme="bento"] .card:hover { border-color: color-mix(in srgb, var(--color-accent-500) 45%, #2a2a3d); }
+[data-theme="bento"] .btn-primary { border-radius: 999px; }
+
+:root[data-theme="glass"] {
+  --color-accent-300: oklch(0.8 0.1 285);
+  --color-accent-400: oklch(0.7 0.16 285);
+  --color-accent-500: oklch(0.6 0.2 285);
+  --color-accent-600: oklch(0.52 0.22 285);
+  --color-accent-700: oklch(0.45 0.2 285);
+}
+[data-theme="glass"] .app-shell {
+  background: linear-gradient(135deg, #c9d6ff 0%, #e2c9ff 50%, #ffd6c9 100%);
+  border-color: rgb(255 255 255 / 0.7);
+}
+[data-theme="glass"] .card {
+  border-radius: 1.25rem;
+  border-color: rgb(255 255 255 / 0.85);
+  background-color: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(16px) saturate(1.5);
+}
+[data-theme="glass"] .app-shell nav {
+  margin: 0.5rem 0 0.5rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.85);
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 0.6);
+  backdrop-filter: blur(16px);
+}
+[data-theme="glass"] .input { background-color: rgb(255 255 255 / 0.7); }
+[data-theme="glass"] .btn-primary { border-radius: 999px; }

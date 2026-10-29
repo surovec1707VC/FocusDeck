@@ -89,7 +89,7 @@ export default function App() {
       {t.shell.skip}
     </a>
     <div
-      className={`flex h-full flex-col overflow-hidden border border-zinc-300/70 bg-zinc-100/95 dark:border-zinc-800 dark:bg-zinc-950/92 ${
+      className={`app-shell flex h-full flex-col overflow-hidden border border-zinc-300/70 bg-zinc-100/95 dark:border-zinc-800 dark:bg-zinc-950/92 ${
         maximized ? "" : "rounded-xl"
       }`}
     >

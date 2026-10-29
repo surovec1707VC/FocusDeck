@@ -700,7 +700,7 @@ export const ru = {
     subtitle: "Внешний вид, окно и системная интеграция",
     appearance: "Внешний вид",
     theme: "Тема",
-    themes: { dark: "Тёмная", light: "Светлая", system: "Как в системе" },
+    themes: { dark: "Тёмная", light: "Светлая", system: "Как в системе", bento: "Бенто", glass: "Стекло" },
     language: "Язык интерфейса",
     russian: "Русский",
     window: "Окно",

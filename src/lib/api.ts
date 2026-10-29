@@ -28,7 +28,7 @@ export const errorText = (e: unknown) => (e instanceof Error ? e.message : Strin
 
 // --- types (mirror the Rust structs) ---
 
-export type Theme = "dark" | "light" | "system";
+export type Theme = "dark" | "light" | "system" | "bento" | "glass";
 
 export interface AppSettings {
   theme: Theme;

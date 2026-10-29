@@ -10,7 +10,14 @@ import logo from "../../assets/logo.svg";
 
 const O = t.shell.onboarding;
 const STEPS = ["welcome", "theme", "modules", "keys", "done"] as const;
-const THEMES: Theme[] = ["dark", "light", "system"];
+const THEMES: Theme[] = ["dark", "light", "system", "bento", "glass"];
+const SWATCH: Record<Theme, string> = {
+  dark: "bg-zinc-900",
+  light: "border border-zinc-200 bg-zinc-50",
+  system: "bg-gradient-to-r from-zinc-50 to-zinc-900",
+  bento: "bg-[#0b0b10] bg-[linear-gradient(90deg,#7c5cff_0_30%,transparent_30%_36%,#12e0a0_36%_60%,transparent_60%_66%,#ff7a6b_66%)] bg-[length:100%_40%] bg-bottom bg-no-repeat",
+  glass: "bg-gradient-to-br from-[#c9d6ff] via-[#e2c9ff] to-[#ffd6c9]",
+};
 /** Modules worth deciding on the first day; everything else lives in the Control Center. */
 const STARTER = ["widgets", "notes", "tasks", "timers", "clipboard_history", "automations", "integrations"];
 
@@ -91,7 +98,7 @@ export default function Onboarding({ open, onClose }: { open: boolean; onClose: 
       {key === "theme" && settings && (
         <div className="flex flex-col gap-3">
           <p className="text-zinc-600 dark:text-zinc-300">{O.themeText}</p>
-          <div role="radiogroup" aria-label={t.settings.theme} className="grid grid-cols-3 gap-2">
+          <div role="radiogroup" aria-label={t.settings.theme} className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {THEMES.map((theme) => (
               <button
                 key={theme}
@@ -100,7 +107,7 @@ export default function Onboarding({ open, onClose }: { open: boolean; onClose: 
                 onClick={() => save({ ...settings, theme }).catch((e) => setError(String(e)))}
                 className={`rounded-xl border p-3 text-left transition ${settings.theme === theme ? "border-accent-500 ring-2 ring-accent-500/30" : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-700"}`}
               >
-                <span className={`mb-2 block h-10 rounded-lg ${theme === "dark" ? "bg-zinc-900" : theme === "light" ? "border border-zinc-200 bg-zinc-50" : "bg-gradient-to-r from-zinc-50 to-zinc-900"}`} />
+                <span className={`mb-2 block h-10 rounded-lg ${SWATCH[theme]}`} />
                 {t.settings.themes[theme]}
               </button>
             ))}
